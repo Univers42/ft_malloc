@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:10:09 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/10/31 17:48:06 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/10/31 18:03:04 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,7 @@
 #  include <sys/mman.h>
 # endif
 
-typedef t_addr	void*;
+typedef void*	t_addr;
 
 /**
  * implementation of magic bytes that check
@@ -130,5 +130,13 @@ static inline int	mover_head(void)
 {
 	return (sizeof(t_mhead));
 }
- 
+
+t_addr	malloc(size_t size);
+t_addr	realloc (t_addr mem, size_t nbytes);
+void	free(t_addr mem);
+t_addr	ft_memalign(size_t	align, size_t size);
+t_addr	valloc(size_t size);
+t_addr	ft_calloc(size_t n, size_t s);
+void	ft_cfree(t_addr mem);
+
 #endif

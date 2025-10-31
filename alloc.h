@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:10:09 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/10/31 17:43:21 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/10/31 17:48:06 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,8 @@
 # ifdef HAVE_MMAP
 #  include <sys/mman.h>
 # endif
+
+typedef t_addr	void*;
 
 /**
  * implementation of magic bytes that check

@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:10:09 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/10/31 18:03:04 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/10/31 19:58:15 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,6 +61,12 @@ beginning of the block.  */
 # define SPLIT_MID			9
 # define SPLIT_MAX			12
 # define COMBINE_MIN		1
+# define LESSCORE_MIN		8
+# define LESSCORE_FRC		11
+# define PREPOP_BIN			1
+# define PREPOP_SIZE		64
+# define START_BUCK			0
+# define NBUCKETS			28
 # define SPLIT_
 # define SPLIT_
 typedef enum e_stmalloc
@@ -118,7 +124,7 @@ typedef struct s_glob
 	int			pagesz;
 	int			pagebucket;
 	int			maxbuck;
-	char		*maxbuck;
+	char		*memtop;
 	char		busy[NBUCKETS];
 	t_mhead		*nextf[NBUCKETS];
 	uint64_t	binsizes[NBUCKETS];
@@ -129,6 +135,44 @@ typedef struct s_glob
 static inline int	mover_head(void)
 {
 	return (sizeof(t_mhead));
+}
+
+typedef enum e_glob_field
+{
+    GLOB_NONE = -1,
+    GLOB_PAGESZ,
+    GLOB_PAGEBUCKET,
+    GLOB_MAXBUCK,
+    GLOB_MEMTOP,
+    GLOB_ERRN
+} t_glob_field;
+
+static inline t_glob* get_glob(t_glob_field field, void* value)
+{
+    static t_glob glob = {0};
+
+    if (field != GLOB_NONE && value != NULL)
+    {
+        if (field == GLOB_PAGESZ)
+            glob.pagesz = *(int*)value;
+        else if (field == GLOB_PAGEBUCKET)
+            glob.pagebucket = *(int*)value;
+        else if (field == GLOB_MAXBUCK)
+            glob.maxbuck = *(int*)value;
+        else if (field == GLOB_MEMTOP)
+            glob.memtop = (char*)value;
+        else if (field == GLOB_ERRN)
+            glob.errn = *(int*)value;
+    }
+    return (&glob);
+}
+
+static inline bool in_bucket(size_t nb, int nu)
+{
+	t_glob	*g;
+
+	g = get_glob(GLOB_NONE, NULL);
+	return (nb <= g->binsizes[nu]);
 }
 
 t_addr	malloc(size_t size);

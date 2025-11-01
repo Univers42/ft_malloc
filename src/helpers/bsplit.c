@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/01 18:38:18 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/01 19:00:19 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/01 21:07:27 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,8 +94,7 @@ void	bsplit(int nu)
     *chain_ptr(mp) = NULL;
 }
 
-static void
-xsplit(t_mhead *mp, int nu)
+void xsplit(t_mhead *mp, int nu)
 {
     t_mhead		*nh;
     int32_t		nbuck;

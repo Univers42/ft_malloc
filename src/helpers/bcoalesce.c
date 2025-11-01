@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/01 18:31:59 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/01 18:37:26 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/01 21:04:31 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,7 +63,7 @@ static void	bcoalesce_stats_inc(int nbuck)
  * assumed to not be busy; the caller (morecore()) check for this.
  * BUSY[NU] must be set to 1.
  */
-static void	bcoalesce(int nu)
+void	bcoalesce(int nu)
 {
     t_mhead         *mp;
     t_mhead         *mp1;

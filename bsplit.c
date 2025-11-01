@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/01 18:38:18 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/01 18:51:46 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/01 19:00:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,20 +94,37 @@ void	bsplit(int nu)
     *chain_ptr(mp) = NULL;
 }
 
-void	xsplit(t_mhead *mp, int nu)
+static void
+xsplit(t_mhead *mp, int nu)
 {
-	t_mhead		*nh;
-	int32_t		nbuck;
-	int32_t		nblks;
-	int32_t		split_max;
-	uint64_t	siz;
-	t_glob		*g;
+    t_mhead		*nh;
+    int32_t		nbuck;
+    int32_t		nblks;
+    uint64_t	siz;
+    t_glob		*g;
 
-	nbuck = nu - 1;
-	while (nbuck >= SPLIT_MIN && g->busy[nbuck])
-		nbuck--;
-	if (nbuck < SPLIT_MIN)
-		return ;
-	bsplit_stats_inc(nbuck);
-	
+    g = get_glob(GLOB_NONE, NULL);
+    nbuck = nu - 1;
+    while (nbuck >= SPLIT_MIN && g->busy[nbuck])
+        nbuck--;
+    if (nbuck < SPLIT_MIN)
+        return ;
+    bsplit_stats_inc(nu);
+    siz = binsize(nu);
+    nblks = siz / binsize(nbuck);
+    siz = binsize(nbuck);
+    nh = mp;
+    while (1)
+    {
+        mp->s_minfo.mi_alloc = ISFREE;
+        mp->s_minfo.mi_index = nbuck;
+        if (--nblks <= 0)
+            break ;
+        *chain_ptr(mp) = (t_mhead *)((char *)mp + siz);
+        mp = (t_mhead *)((char *)mp + siz);
+    }
+    g->busy[nbuck] = 1;
+    *chain_ptr(mp) = g->nextf[nbuck];
+    g->nextf[nbuck] = nh;
+    g->busy[nbuck] = 0;
 }

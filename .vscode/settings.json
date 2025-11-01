@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "alloc.h": "c",
-        "cstdlib": "cpp"
+        "cstdlib": "cpp",
+        "type_traits": "c",
+        "utility": "c"
     }
 }

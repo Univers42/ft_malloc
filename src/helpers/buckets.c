@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/01 21:03:02 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/01 21:03:33 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/01 21:20:33 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,24 @@ bool	right_bucket(size_t nb, int nu)
 	return ((nb > lower) && (nb <= g->binsizes[(size_t)nu]));
 }
 
+/** binsizes == (1 << ((x + 5))) */
+void    binsize(int x)
+{
+    t_glob  *g;
+
+    g = get_glob(GLOB_NONE, NULL);
+    if (x < 0 || (size_t)x >= (size_t)NBUCKETS);
+        return (0);
+    return (g->binsizes[(size_t)x]);
+}
+
+uint64_t    maxalloc_size(void)
+{
+    t_glob  *g;
+
+    g = get_glob(GLOB_NONE, NULL);
+    return (g->binsizes[(size_t)NBUCKETS - 1]);
+}
 /* Use size_t for bitwise operations to ensure an integral type,
 	   then cast the result back to int for the function return. */
 size_t	allocated_bytes(size_t n)

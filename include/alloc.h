@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:10:09 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/01 21:08:05 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 00:20:32 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,9 @@
 # include <unistd.h>
 # include <stdint.h>
 # include <sys/mman.h>
+# include <signal.h>
+# include "stats.h"
+# include <asm/signal.h>
 
 # define MALLOC_PAGESIZE_MIN 4096
 # define MALLOC_INCR_PAGES 8192
@@ -101,6 +104,10 @@ beginning of the block.  */
 #  undef USE_MREMAP
 #  define USE_MREMAP 0
 # endif
+
+#ifdef MALLOC_STATS
+struct _malstats _mstats;
+#endif /* MALLOC_STATS */
 
 typedef enum e_stmalloc
 {
@@ -170,9 +177,74 @@ typedef struct s_glob
 	char		busy[NBUCKETS];
 	t_mhead		*nextf[NBUCKETS];
 	uint64_t	binsizes[NBUCKETS];
+	// future feature
+	int			malloc_flags;
+	int			malloc_trace;
+	int			malloc_register;
+	int			malloc_mmap_threshold;
 	int			errn;
 }	t_glob;
 
+# ifdef DEBUG
+typedef struct s_glob
+{
+	int			pagesz;
+	int			pagebucket;
+	int			maxbuck;
+	char		*memtop;
+	char		busy[NBUCKETS];
+	t_mhead		*nextf[NBUCKETS];
+	uint64_t	binsizes[NBUCKETS];
+	int			malloc_flags;
+	int			malloc_trace;
+	int			malloc_register;
+	int			malloc_mmap_threshold;
+	int			errn;
+}	t_glob;
+# endif
+
+# ifdef MALLOC_TRACE
+typedef struct s_glob
+{
+	int			pagesz;
+	int			pagebucket;
+	int			maxbuck;
+	char		*memtop;
+	char		busy[NBUCKETS];
+	t_mhead		*nextf[NBUCKETS];
+	uint64_t	binsizes[NBUCKETS];
+	int			malloc_flags;
+	int			malloc_trace;
+	int			malloc_register;
+	int			malloc_mmap_threshold;
+	int			errn;
+	char		malloc_trace_buckets[NBUCKETS];
+}	t_glob;
+
+//void mtrace_alloc(const char *, PTR_T, size_t, const char *, int);
+//void mtrace_free(PTR_T, int, const char *, int);
+#endif
+
+# ifdef MALLOC_STATS
+typedef struct s_glob
+{
+	int			pagesz;
+	int			pagebucket;
+	int			maxbuck;
+	char		*memtop;
+	char		busy[NBUCKETS];
+	t_mhead		*nextf[NBUCKETS];
+	uint64_t	binsizes[NBUCKETS];
+	int			malloc_flags;
+	int			malloc_trace;
+	int			malloc_register;
+	int			malloc_mmap_threshold;
+	int			errn;
+	char		malloc_trace_buckets[NBUCKETS];
+	t_stats		mstats;
+}	t_glob;
+
+#endif
 static inline int	mover_head(void)
 {
 	return (sizeof(t_mhead));
@@ -237,5 +309,8 @@ void		xsplit(t_mhead *mp, int nu);
 bool		in_bucket(size_t nb, int nu);
 bool		right_bucket(size_t nb, int nu);
 size_t		allocated_bytes(size_t n);
+void		compute_stats_core(t_glob *g, int nu, int flag, size_t value);
+void		compute_stats_brk(t_glob *g, size_t value);
+void		compute_stats_mmap(t_glob *g, size_t value);
 
 #endif

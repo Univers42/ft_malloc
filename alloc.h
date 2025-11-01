@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:10:09 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/10/31 19:58:15 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/01 14:04:41 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,10 +65,8 @@ beginning of the block.  */
 # define LESSCORE_FRC		11
 # define PREPOP_BIN			1
 # define PREPOP_SIZE		64
-# define START_BUCK			0
+# define STARTBUCK			0
 # define NBUCKETS			28
-# define SPLIT_
-# define SPLIT_
 typedef enum e_stmalloc
 {
 	MALLOC_WRAPPER = 0X01,
@@ -182,5 +180,14 @@ t_addr	ft_memalign(size_t	align, size_t size);
 t_addr	valloc(size_t size);
 t_addr	ft_calloc(size_t n, size_t s);
 void	ft_cfree(t_addr mem);
+size_t	allocated_bytes (size_t n);
+t_mhead	*chain(t_mhead *a);
+t_mhead	**chain_ptr(t_mhead *a);
+void	malloc_stats_sbrk_update(long sbrk_needed);
+int		pagealign(void);
+void	register_malloc(t_addr mem, int e, const char *s, const char *file, int line);
+void	botch(const char *s, const char *file, int line);
+void	xbotch(t_addr mem, int e, const char *s, const char *file, int line);
+void	bcoalesce(int nu);
 
 #endif

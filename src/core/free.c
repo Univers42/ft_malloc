@@ -293,6 +293,7 @@ static void handle_malloc_watch(t_addr mem, uint32_t ubytes, const char *file, i
 
 static void finalize_free(t_addr mem, uint32_t ubytes, int nunits, const char *file, int line, int flags, t_glob *g)
 {
+	untrack_allocation(mem);
 	update_malloc_stats(nunits, g);
 	handle_malloc_trace(mem, ubytes, nunits, file, line, flags, g);
 	handle_malloc_register(mem, ubytes, file, line, flags, g);

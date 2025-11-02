@@ -337,4 +337,9 @@ int posix_memalign(void **memptr, size_t alignment, size_t size);
 void malloc_block_signals(sigset_t *setp, sigset_t *osetp);
 void malloc_unblock_signals(sigset_t *setp, sigset_t *osetp);
 
+/* Debug visualization */
+void show_alloc_mem(void);
+void track_allocation(void *ptr, size_t size);
+void untrack_allocation(void *ptr);
+
 #endif

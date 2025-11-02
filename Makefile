@@ -49,7 +49,8 @@ HELPERS_SRCS = $(HELPERS_DIR)/accessors.c \
                $(HELPERS_DIR)/signals.c
 
 DEBUG_SRCS = $(DEBUG_DIR)/stats.c \
-             $(DEBUG_DIR)/helper.c
+             $(DEBUG_DIR)/helper.c \
+             $(DEBUG_DIR)/show_alloc.c
 
 UTILS_SRCS = $(UTILS_DIR)/powerof2.c
 

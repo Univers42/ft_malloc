@@ -230,6 +230,7 @@ static void finalize_alloc(t_addr ptr, t_mhead *p, size_t n, int nunits, const c
 	handle_malloc_register_alloc(ptr, n, file, line, flags, g);
 	handle_malloc_watch_alloc(ptr, n, file, line, g);
 	check_alignment(ptr, p, file, line);
+	track_allocation(ptr, n);
 }
 
 t_addr internal_malloc(size_t n, const char *file, int line, int flags)

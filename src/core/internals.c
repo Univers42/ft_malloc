@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:56:05 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 13:04:54 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 14:13:29 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,8 +78,9 @@ t_addr  internal_valloc(size_t size, const char *file, int line, int flags)
 {
 	return (internal_memalign(getpagesize(), size, file, line, flags | MALLOC_INTERNAL));
 }
-#endif
+#endif // !NO_VALLOC
 
+#ifndef NO_CALLOC
 t_addr  internal_calloc(size_t n, size_t s, const char *file, int line, int flags)
 {
 	size_t	total;
@@ -91,6 +92,12 @@ t_addr  internal_calloc(size_t n, size_t s, const char *file, int line, int flag
 		memset(res, 0, total);
 	return (res);
 }
+
+void  internal_cfree(t_addr p, const char *file, int line, int flags)
+{
+	internal_free(p, file, line, flags|MALLOC_INTERNAL);	
+}
+#endif	//NO_CALLOC
 
 t_addr	internal_memalign(size_t alignment, size_t size, const char *file, int line, int flags)
 {
@@ -125,10 +132,6 @@ int	posix_memalign(void **memptr, size_t alignment, size_t size)
 		return (0);
 	}
 	return (ENOMEM);
-}
-void  internal_cfree(t_addr p, const char *file, int line, int flags)
-{
-	internal_free(p, file, line, flags|MALLOC_INTERNAL);	
 }
 
 void    internal_free(t_addr mem, const char *file, int line, int flags)

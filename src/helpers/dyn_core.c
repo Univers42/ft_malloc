@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/01 21:32:29 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 00:10:32 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 14:37:12 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 #include <stdint.h>
 
 #if defined(USE_MMAP)
-#  include <sys/mman.h>
+#include <sys/mman.h>
 #endif
 
 /* try_mmap_for_morecore: file-scope helper that is compiled in/out */
@@ -45,18 +45,40 @@ static int try_mmap_for_morecore(int nu, long sbrk_amt, t_mhead **out_mp, t_glob
 #else
 static int try_mmap_for_morecore(int nu, long sbrk_amt, t_mhead **out_mp, t_glob *g)
 {
-    (void)nu; (void)sbrk_amt; (void)out_mp; (void)g;
+    (void)nu;
+    (void)sbrk_amt;
+    (void)out_mp;
+    (void)g;
     return 0;
 }
 #endif
 
 /* stats helpers (no-op when MALLOC_STATS not defined) */
 #ifdef MALLOC_STATS
-static void morecore_stat_nmorecore(int nu, t_glob *g) { if (g) g->mstats.nmorecore[nu]++; }
-static void morecore_stat_nsbrk(long s, t_glob *g) { if (g) { g->mstats.nsbrk++; g->mstats.tsbrk += s; } }
+static void morecore_stat_nmorecore(int nu, t_glob *g)
+{
+    if (g)
+        g->mstats.nmorecore[nu]++;
+}
+static void morecore_stat_nsbrk(long s, t_glob *g)
+{
+    if (g)
+    {
+        g->mstats.nsbrk++;
+        g->mstats.tsbrk += s;
+    }
+}
 #else
-static void morecore_stat_nmorecore(int nu, t_glob *g) { (void)nu; (void)g; }
-static void morecore_stat_nsbrk(long s, t_glob *g) { (void)s; (void)g; }
+static void morecore_stat_nmorecore(int nu, t_glob *g)
+{
+    (void)nu;
+    (void)g;
+}
+static void morecore_stat_nsbrk(long s, t_glob *g)
+{
+    (void)s;
+    (void)g;
+}
 #endif
 
 void lesscore(int nu)
@@ -86,13 +108,14 @@ size_t combine_max(size_t page_bucket)
 
 void morecore(int nu)
 {
-    t_mhead	*mp = NULL;
-    int		nblks = 0;
-    size_t	siz = 0;
-    long	sbrk_amt = 0;
+    t_mhead *mp = NULL;
+    int nblks = 0;
+    size_t siz = 0;
+    long sbrk_amt = 0;
     sigset_t set, oset;
-    int		blocked_sigs = 0;
-    t_glob	*g = get_glob(GLOB_NONE, NULL);
+    int blocked_sigs = 0;
+    t_glob *g = get_glob(GLOB_NONE, NULL);
+    int combine_limit;
 
     if (!g)
         return;
@@ -119,7 +142,8 @@ void morecore(int nu)
         }
 
         /* try coalescing two smaller blocks */
-        if (nu >= COMBINE_MIN && nu < combine_max(g->pagebucket) &&
+        combine_limit = (int)combine_max((size_t)g->pagebucket);
+        if (nu >= COMBINE_MIN && nu < combine_limit &&
             nu <= g->malloc_mmap_threshold && g->busy[nu - 1] == 0 && g->nextf[nu - 1])
         {
             bcoalesce(nu);

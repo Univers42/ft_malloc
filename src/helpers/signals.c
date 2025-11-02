@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/01 21:27:49 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 14:17:29 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 14:30:34 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,12 +53,12 @@ static void malloc_unblock_signals_impl(sigset_t *setp, sigset_t *osetp)
 #endif
 
 /* public wrappers without any #if/#ifdef inside function scope */
-void _malloc_block_signals(sigset_t *setp, sigset_t *osetp)
+void malloc_block_signals(sigset_t *setp, sigset_t *osetp)
 {
     malloc_block_signals_impl(setp, osetp);
 }
 
-void _malloc_unblock_signals(sigset_t *setp, sigset_t *osetp)
+void malloc_unblock_signals(sigset_t *setp, sigset_t *osetp)
 {
     malloc_unblock_signals_impl(setp, osetp);
 }

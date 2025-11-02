@@ -6,14 +6,12 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:58:57 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 14:09:26 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 14:29:24 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef STATS_H
 #define STATS_H
-
-#include "imalloc.h"
 
 typedef enum e_stats
 {

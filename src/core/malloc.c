@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 18:56:10 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 14:09:22 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 14:30:34 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -149,8 +149,10 @@ static int check_max_alloc_size(size_t n)
 static int calculate_nunits(uint32_t nbytes, t_glob *g)
 {
 	int nunits;
+	uint32_t half_page;
 
-	if (nbytes <= (g->pagesz >> 1))
+	half_page = (uint32_t)(g->pagesz >> 1);
+	if (nbytes <= half_page)
 		nunits = STARTBUCK;
 	else
 		nunits = g->pagebucket;
@@ -208,16 +210,16 @@ static void setup_block_header(t_mhead *p, size_t n)
 static void setup_end_guard(t_mhead *p, size_t n)
 {
 	t_mguard mg;
-	char *z;
+	uint8_t *z;
 	char *m;
 
 	mg.i = n;
-	z = mg.s;
+	z = (uint8_t *)mg.s;
 	m = (char *)(p + 1) + n;
-	*m++ = *z++;
-	*m++ = *z++;
-	*m++ = *z++;
-	*m++ = *z++;
+	*m++ = (char)*z++;
+	*m++ = (char)*z++;
+	*m++ = (char)*z++;
+	*m++ = (char)*z++;
 }
 
 static void finalize_alloc(t_addr ptr, t_mhead *p, size_t n, int nunits, const char *file, int line, int flags, t_glob *g)

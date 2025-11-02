@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:10:09 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 14:06:06 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 14:46:40 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,16 +27,13 @@
 #include <string.h>
 #include <sys/types.h>
 #include <signal.h>
-#include <string.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <sys/mman.h>
-#include <signal.h>
 #include "stats.h"
-#include <asm/signal.h>
 
 #define MALLOC_PAGESIZE_MIN 4096
 #define MALLOC_INCR_PAGES 8192
@@ -162,12 +159,6 @@ typedef union u_mhead
 	} s_minfo;
 } t_mhead;
 
-typedef union u_alloc_guard
-{
-	uint8_t s[4];
-	uint32_t i;
-} t_mguard;
-
 typedef struct s_glob
 {
 	int pagesz;
@@ -270,6 +261,9 @@ typedef enum e_glob_field
 t_addr malloc(size_t size);
 t_addr realloc(t_addr mem, size_t nbytes);
 void free(t_addr mem);
+t_addr ft_malloc(size_t size);
+t_addr ft_realloc(t_addr mem, size_t nbytes);
+void ft_free(t_addr mem);
 t_addr ft_memalign(size_t align, size_t size);
 t_addr valloc(size_t size);
 t_addr ft_calloc(size_t n, size_t s);
@@ -291,6 +285,7 @@ void bcoalesce(int nu);
  * HELPERS
  */
 t_glob *get_glob(t_glob_field field, void *value);
+void init_allocator_glob(void);
 void bcoalesce(int nu);
 
 #ifdef MALLOC_REGISTER
@@ -312,6 +307,34 @@ size_t allocated_bytes(size_t n);
 void compute_stats_core(t_glob *g, int nu, int flag, size_t value);
 void compute_stats_brk(t_glob *g, size_t value);
 void compute_stats_mmap(t_glob *g, size_t value);
+void compute_stats_realloc_copy(t_glob *g);
 int is_powerof2(int x);
 void assert_or_abort(int cond, const char *expr, const char *file, int line);
+
+/* imalloc helper functions */
+void malloc_memset(void *charp, int xch, size_t nbytes);
+void malloc_bzero(void *charp, size_t nbytes);
+void malloc_zero(void *charp, size_t nbytes);
+void malloc_memcpy(void *dest, const void *src, size_t nbytes);
+void fastcopy(const void *s, void *d, size_t n);
+size_t malloc_usable_size(void *mem);
+
+/* Additional core functions */
+uint64_t binsize(int x);
+uint64_t maxalloc_size(void);
+void lesscore(int nu);
+void morecore(int nu);
+t_addr internal_malloc(size_t n, const char *file, int line, int flags);
+t_addr internal_free(t_addr mem, const char *file, int line, int flags);
+t_addr internal_realloc(t_addr mem, size_t n, const char *file, int line, int flags);
+t_addr internal_memalign(size_t alignment, size_t size, const char *file, int line, int flags);
+t_addr internal_valloc(size_t size, const char *file, int line, int flags);
+t_addr internal_calloc(size_t n, size_t s, const char *file, int line, int flags);
+void internal_cfree(t_addr p, const char *file, int line, int flags);
+int posix_memalign(void **memptr, size_t alignment, size_t size);
+
+/* Signal handling */
+void malloc_block_signals(sigset_t *setp, sigset_t *osetp);
+void malloc_unblock_signals(sigset_t *setp, sigset_t *osetp);
+
 #endif

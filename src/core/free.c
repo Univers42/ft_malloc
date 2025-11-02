@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/02 00:38:07 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 14:06:06 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 14:32:22 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -142,6 +142,7 @@ static void trace_and_watch_setup(t_mhead *p, uint32_t *ubytes)
 
 static void handle_memalign(t_addr *mem, char **ap, t_mhead **p)
 {
+	(void)mem;
 	if ((*p)->s_minfo.mi_alloc == ISMEMALILGN)
 	{
 		*ap -= (*p)->s_minfo.mi_nbytes;
@@ -164,10 +165,10 @@ static void validate_alloc_status(t_addr mem, t_mhead *p, const char *file, int 
 static void validate_magic8(t_mhead *p, t_addr mem, const char *file, int line)
 {
 	int i;
-	char *z;
+	uint8_t *z;
 
 	i = 0;
-	z = p->s_minfo.mi_magic8;
+	z = (uint8_t *)p->s_minfo.mi_magic8;
 	while (i < MAGIC8_NUMBYTES)
 	{
 		if (*z++ != MAGIC1)
@@ -180,14 +181,15 @@ static void validate_end_guard(char *ap, t_mhead *p, t_addr mem, const char *fil
 {
 	t_mguard mg;
 	char *z;
+	char *ap_end;
 	int i;
 
-	ap += p->s_minfo.mi_nbytes;
-	z = mg.s;
+	ap_end = ap + p->s_minfo.mi_nbytes;
+	z = (char *)mg.s;
 	i = 0;
 	while (i < 4)
 	{
-		*z++ = *ap++;
+		*z++ = *ap_end++;
 		i++;
 	}
 	if (mg.i != p->s_minfo.mi_nbytes)

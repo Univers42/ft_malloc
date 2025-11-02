@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/01 20:11:52 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 00:22:55 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 14:37:12 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,12 +17,12 @@
 
 int pagealign(void)
 {
-    t_glob	*g;
-    int		nunits;
-    t_mhead	*mp;
-    long	sbrk_needed;
-    char	*curbrk;
-	void	*sret;
+    t_glob *g;
+    int nunits;
+    t_mhead *mp;
+    long sbrk_needed;
+    char *curbrk;
+    void *sret;
 
     g = get_glob(GLOB_NONE, NULL);
     if (!g)
@@ -42,10 +42,10 @@ int pagealign(void)
     /* allocate the wasted partial page and populate PREPOP bin with 64-byte chunks */
     if (sbrk_needed)
     {
-		compute_stats_brk(g, sbrk_needed);
-		sret = sbrk(sbrk_needed);
-		if (sret == (t_addr)-1)
-			return (-1);
+        compute_stats_brk(g, sbrk_needed);
+        sret = sbrk(sbrk_needed);
+        if (sret == (t_addr)-1)
+            return (-1);
         curbrk = sbrk(sbrk_needed);
         if ((long)curbrk == -1)
             return (-1);
@@ -79,7 +79,7 @@ int pagealign(void)
     nunits = 7;
     while (nunits < NBUCKETS)
     {
-        if (g->pagesz <= g->binsizes[(size_t)nunits])
+        if ((uint64_t)g->pagesz <= g->binsizes[(size_t)nunits])
             break;
         nunits++;
     }

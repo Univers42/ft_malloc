@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/02 00:38:30 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 13:08:30 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 14:33:40 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include <string.h>
 
 /* round up to pages */
+#if USE_MREMAP == 1
 static size_t
 pages_round_up(size_t bytes)
 {
@@ -24,6 +25,7 @@ pages_round_up(size_t bytes)
     p = (size_t)getpagesize();
     return (bytes + p - 1) & ~(p - 1);
 }
+#endif
 
 /*
  * mremap_implement - three compile-time variants
@@ -43,14 +45,14 @@ static t_addr
 mremap_implement(t_addr mem, size_t n, int newunits, uint32_t tocopy,
                  int flags, const char *file, int line, t_glob *g, int nunits)
 {
-    t_mhead		*p;
-    void		*old_payload;
-    void		*remap_ret;
-    size_t		old_alloc_bytes;
-    size_t		new_alloc_bytes;
-    size_t		old_pages;
-    size_t		new_pages;
-    t_mhead		*np;
+    t_mhead *p;
+    void *old_payload;
+    void *remap_ret;
+    size_t old_alloc_bytes;
+    size_t new_alloc_bytes;
+    size_t old_pages;
+    size_t new_pages;
+    t_mhead *np;
 
     if (!mem || !g)
         return ((t_addr)0);
@@ -88,12 +90,12 @@ static t_addr
 mremap_implement(t_addr mem, size_t n, int newunits, uint32_t tocopy,
                  int flags, const char *file, int line, t_glob *g, int nunits)
 {
-    t_mhead		*p;
-    void		*old_payload;
-    void		*remap_ret;
-    size_t		old_alloc_bytes;
-    size_t		new_alloc_bytes;
-    t_mhead		*np;
+    t_mhead *p;
+    void *old_payload;
+    void *remap_ret;
+    size_t old_alloc_bytes;
+    size_t new_alloc_bytes;
+    t_mhead *np;
 
     if (!mem || !g)
         return ((t_addr)0);
@@ -126,36 +128,27 @@ static t_addr
 mremap_implement(t_addr mem, size_t n, int newunits, uint32_t tocopy,
                  int flags, const char *file, int line, t_glob *g, int nunits)
 {
-    t_addr		newaddr;
+    t_addr newaddr;
 
     (void)newunits;
     (void)flags;
-    (void)file;
-    (void)line;
-    (void)g;
     (void)nunits;
+    (void)g;
 
     /* always fall back to allocate-copy-free */
     newaddr = internal_malloc(n, file, line, MALLOC_INTERNAL | MALLOC_NOTRACE | MALLOC_NOREG);
     if (newaddr == (t_addr)0)
         return ((t_addr)0);
-    FASTCOPY((void *)mem, (void *)newaddr, tocopy);
+    fastcopy((void *)mem, (void *)newaddr, tocopy);
     internal_free(mem, file, line, MALLOC_INTERNAL);
-#ifdef MALLOC_STATS
-    /* increment copy counter if stats are enabled */
-    /* get_glob may be expensive here; caller often has g, but keep it simple */
-    t_glob *lg = get_glob(GLOB_NONE, NULL);
-    if (lg)
-        lg->mstats.nrcopy++;
-#endif
+    compute_stats_realloc_copy(g);
     return (newaddr);
 }
 
 #endif /* USE_MREMAP */
 
 /* simple assert replacement */
-void
-assert_or_abort(int cond, const char *expr, const char *file, int line)
+void assert_or_abort(int cond, const char *expr, const char *file, int line)
 {
     if (!cond)
         xbotch((t_addr)0, ERR_ASSERT_FAILED, (char *)expr, file, line);
@@ -172,23 +165,23 @@ assert_or_abort(int cond, const char *expr, const char *file, int line)
  * *page / allocation rounding
  * *fastcopy, internal malloc/internal_free signatures
  * *error_handling /errno preservation
- * *norminette / style 
+ * *norminette / style
  * */
 t_addr
 internal_realloc(t_addr mem, size_t n, const char *file, int line, int flags)
 {
-    t_mhead		*p;
-    uint32_t	tocopy;
-    size_t		old_alloc_bytes;
-    size_t		new_alloc_bytes;
-    int			nunits;
-    int			newunits;
-    t_glob		*g;
-    int			i;
-    t_mguard	mg;
-    char		*z;
-    char		*m;
-    t_addr		mresult;
+    t_mhead *p;
+    uint32_t tocopy;
+    size_t old_alloc_bytes;
+    size_t new_alloc_bytes;
+    int nunits;
+    int newunits;
+    t_glob *g;
+    int i;
+    t_mguard mg;
+    uint8_t *z;
+    char *m;
+    t_addr mresult;
 
     g = get_glob(GLOB_NONE, NULL);
     compute_stats_core(g, 0, STAT_REALLOC, 0);
@@ -210,7 +203,7 @@ internal_realloc(t_addr mem, size_t n, const char *file, int line, int flags)
 
     /* underflow / magic8 check */
     i = 0;
-    z = p->s_minfo.mi_magic8;
+    z = (uint8_t *)p->s_minfo.mi_magic8;
     while (i < MAGIC8_NUMBYTES)
     {
         if (*z++ != MAGIC1)
@@ -225,17 +218,20 @@ internal_realloc(t_addr mem, size_t n, const char *file, int line, int flags)
 
     /* guard snapshot */
     m = (char *)mem + tocopy;
-    z = mg.s;
-    *z++ = *m++; *z++ = *m++; *z++ = *m++; *z++ = *m++;
+    z = (uint8_t *)mg.s;
+    *z++ = (uint8_t)*m++;
+    *z++ = (uint8_t)*m++;
+    *z++ = (uint8_t)*m++;
+    *z++ = (uint8_t)*m++;
     if (mg.i != p->s_minfo.mi_nbytes)
-        xbotch(mem, ERR_ASSERT_FAILED, _("realloc: start and end chunk sizes differ"), file, line);
+        xbotch(mem, ERR_ASSERT_FAILED, "realloc: start and end chunk sizes differ", file, line);
 
     /* no change */
     if (n == p->s_minfo.mi_nbytes)
         return (mem);
 
-    old_alloc_bytes = ALLOCATED_BYTES((size_t)p->s_minfo.mi_nbytes);
-    new_alloc_bytes = ALLOCATED_BYTES((size_t)n);
+    old_alloc_bytes = allocated_bytes((size_t)p->s_minfo.mi_nbytes);
+    new_alloc_bytes = allocated_bytes((size_t)n);
 
     nunits = (int)p->s_minfo.mi_index;
     assert_or_abort(nunits < NBUCKETS, "nunits < NBUCKETS", file, line);
@@ -244,24 +240,34 @@ internal_realloc(t_addr mem, size_t n, const char *file, int line, int flags)
     if (new_alloc_bytes > old_alloc_bytes)
         newunits = nunits;
     else
-        newunits = (new_alloc_bytes <= (g->pagesz >> 1)) ? STARTBUCK : g->pagebucket;
+    {
+        size_t half_page = (size_t)(g->pagesz >> 1);
+        newunits = (new_alloc_bytes <= half_page) ? STARTBUCK : g->pagebucket;
+    }
     while (newunits < (int)NBUCKETS && new_alloc_bytes > g->binsizes[(size_t)newunits])
         newunits++;
 
     /* quick in-place adjust when same/adjacent bucket */
     if (right_bucket(new_alloc_bytes, nunits) ||
-        (nunits >= 1 && right_bucket(new_alloc_bytes, nunits) - 1))
+        (nunits >= 1 && right_bucket(new_alloc_bytes, nunits - 1)))
     {
         char *end;
+        uint8_t *zz;
 
         end = (char *)mem + p->s_minfo.mi_nbytes;
         end -= 4;
-        end[0] = 0; end[1] = 0; end[2] = 0; end[3] = 0;
+        end[0] = 0;
+        end[1] = 0;
+        end[2] = 0;
+        end[3] = 0;
         p->s_minfo.mi_nbytes = (uint32_t)n;
         mg.i = n;
-        z = mg.s;
+        zz = (uint8_t *)mg.s;
         end = (char *)mem + p->s_minfo.mi_nbytes;
-        *end++ = *z++; *end++ = *z++; *end++ = *z++; *end++ = *z++;
+        *end++ = (char)*zz++;
+        *end++ = (char)*zz++;
+        *end++ = (char)*zz++;
+        *end++ = (char)*zz++;
         return (mem);
     }
 

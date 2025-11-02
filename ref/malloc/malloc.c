@@ -110,24 +110,24 @@
 #include "watch.h"
 #endif
 
-// #ifdef powerof2
-// #  undef powerof2
-// #endif
-// /* Could also use (((x) & -(x)) == (x)) */
-// #define powerof2(x)	((((x) - 1) & (x)) == 0)
+#ifdef powerof2
+#  undef powerof2
+#endif
+/* Could also use (((x) & -(x)) == (x)) */
+#define powerof2(x)	((((x) - 1) & (x)) == 0)
 
-// /* System-specific omissions. */
-// #ifdef HPUX
-// #  define NO_VALLOC
-// #endif
+ /* System-specific omissions. */
+ #ifdef HPUX
+ #  define NO_VALLOC
+ #endif
 
-// #define MALLOC_PAGESIZE_MIN	4096
-// #define MALLOC_INCR_PAGES	8192
+ #define MALLOC_PAGESIZE_MIN	4096
+ #define MALLOC_INCR_PAGES	8192
 
-// #define ISALLOC ((char) 0xf7)	/* magic byte that implies allocation */
-// #define ISFREE ((char) 0x54)	/* magic byte that implies free block */
-// 				/* this is for error checking only */
-// #define ISMEMALIGN ((char) 0xd6)  /* Stored before the value returned by
+ #define ISALLOC ((char) 0xf7)	/* magic byte that implies allocation */
+ #define ISFREE ((char) 0x54)	/* magic byte that implies free block */
+ 				/* this is for error checking only */
+ #define ISMEMALIGN ((char) 0xd6)  /* Stored before the value returned by
 // 				     memalign, with the rest of the word
 // 				     being the distance to the true
 // 				     beginning of the block.  */
@@ -138,29 +138,28 @@
    memory we either copy mh_nbytes or just change mh_nbytes if there is
    enough room in the block for the new size.  Range checking is always
    done. */
-// union mhead {
-//   bits64_t mh_align[2];						/* 16 */
-//   struct {
-//     char mi_alloc; 		/* ISALLOC or ISFREE */		/* 1 */
-//     char mi_index;		/* index in nextf[] */		/* 1 */
-//     /* Remainder are valid only when block is allocated */
-//     u_bits16_t mi_magic2;	/* should be == MAGIC2 */	/* 2 */
-//     u_bits32_t mi_nbytes;	/* # of bytes allocated */	/* 4 */
-//     char mi_magic8[8];		/* MAGIC1 guard bytes */	/* 8 */
-//   } minfo;
-// };
-// #define mh_alloc	minfo.mi_alloc
-// #define mh_index	minfo.mi_index
-// #define mh_nbytes	minfo.mi_nbytes
-// #define mh_magic2	minfo.mi_magic2
-// #define mh_magic8	minfo.mi_magic8
+ union mhead {
+   bits64_t mh_align[2];						/* 16 */
+   struct {
+     char mi_alloc; 		/* ISALLOC or ISFREE */		/* 1 */
+     char mi_index;		/* index in nextf[] */		/* 1 */
+     /* Remainder are valid only when block is allocated */
+     u_bits16_t mi_magic2;	/* should be == MAGIC2 */	/* 2 */
+     u_bits32_t mi_nbytes;	/* # of bytes allocated */	/* 4 */
+     char mi_magic8[8];		/* MAGIC1 guard bytes */	/* 8 */
+   } minfo;
+ };
+ #define mh_alloc	minfo.mi_alloc
+ #define mh_index	minfo.mi_index
+ #define mh_nbytes	minfo.mi_nbytes
+ #define mh_magic2	minfo.mi_magic2
+ #define mh_magic8	minfo.mi_magic8
 
-// #define MAGIC8_NUMBYTES	8
-// #define MALLOC_SIZE_T		u_bits32_t
+#define MAGIC8_NUMBYTES	8
+#define MALLOC_SIZE_T		u_bits32_t
+#define MOVERHEAD	sizeof(union mhead)
 
-// #define MOVERHEAD	sizeof(union mhead)
-
-// #define MALIGN_MASK	15		/* one less than desired alignment */
+#define MALIGN_MASK	15		/* one less than desired alignment */
 
 /* Guard bytes we write at the end of the allocation, encoding the size. */
 typedef union _malloc_guard

@@ -6,9 +6,14 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/02 00:38:07 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 00:38:26 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 01:16:38 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "alloc.h"
 
+
+t_addr  internal_free(t_addr mem, const char *file, int line, int flags)
+{
+
+}

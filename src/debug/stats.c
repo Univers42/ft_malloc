@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:58:21 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 00:36:49 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 01:20:36 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,6 +36,8 @@ void compute_stats_core(t_glob *g, int nu, int flag, size_t value)
         g->mstats.nsbrk++;
         g->mstats.tsbrk += (long)value;
     }
+    else if (flag == STAT_REALLOC)
+        g->mstats.nrealloc++;
     else /* STAT_MORE_CORE */
     {
         if ((size_t)nu >= NBUCKETS)

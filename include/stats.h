@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:58:57 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 00:23:52 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 01:21:02 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,8 @@ typedef enum e_stats
 	STAT_MORE_CORE,
 	STAT_MMAP,
 	STAT_SBRK,
-	STAT_BRK
+	STAT_BRK,
+	STAT_REALLOC
 }	t_flag_stat;
 
 

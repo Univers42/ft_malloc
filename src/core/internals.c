@@ -6,25 +6,55 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:56:05 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 00:34:01 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 13:04:54 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "alloc.h"
 
-t_addr	internal_malloc(size_t n, const char *file, int line, int flags)
+
+t_addr	internal_remap(t_addr mem, size_t n, int nunits, int flags)
 {
+	t_mhead	*p;
+	t_mhead	*np;
+	char	*z;
+	char	*m;
+	t_mguard mg;
+	int32_t	nbytes;
+	t_glob	*g;
 
-}
-
-t_addr  internal_free(t_addr mem, const char *file, int line, int flags)
-{
-
-}
-
-t_addr  internal_realloc(t_addr mem, size_t n, const char *file, int line, int flags)
-{
-
+	g = get_glob(GLOB_NONE, NULL);
+	if (nunits >= NBUCKETS)
+		return ((t_addr)NULL);
+	p = (t_mhead*)mem - 1;
+	m = (char*)mem + p->s_minfo.mi_nbytes;
+	z = mg.s;
+	*m++ = 0;
+	*m++ = 0;
+	*m++ = 0;
+	*m++ = 0;
+	nbytes = allocated_bytes(n);
+	g->busy[nunits] = 1;
+	if (np == MAP_FAILED)
+		return (t_addr)NULL;
+	if (np != p)
+		return (t_addr)NULL;
+	if (np != p)
+	{
+		np->s_minfo.mi_alloc = ISALLOC;
+		np->s_minfo.mi_magic2 = MAGIC2;
+		malloc_memset((char*)np->s_minfo.mi_magic8, MAGIC1, MAGIC8_NUMBYTES);
+	}
+	np->s_minfo.mi_index = nunits;
+	np->s_minfo.mi_nbytes = n;
+	mg.i = n;
+	z = mg.s;
+	m = (char *)(np + 1) + n;
+	*m++ = *z++;
+	*m++ = *z++;
+	*m++ = *z++;
+	*m++ = *z++;
+	return ((t_addr)(np + 1));
 }
 
 /**
@@ -62,6 +92,40 @@ t_addr  internal_calloc(size_t n, size_t s, const char *file, int line, int flag
 	return (res);
 }
 
+t_addr	internal_memalign(size_t alignment, size_t size, const char *file, int line, int flags)
+{
+	char	*ptr;
+	char	*aligned;
+	t_mhead	*p;
+
+	ptr = internal_malloc(size + alignment, file, line, MALLOC_INTERNAL);
+	if (ptr == 0)
+		return (0);
+	if (((long)ptr & (alignment - 1)) == 0)
+		return (ptr);
+	aligned = (char*)(((long)ptr + alignment - 1) &(~alignment + 1));
+	p = (t_mhead*)aligned - 1;
+	p->s_minfo.mi_nbytes = aligned - ptr;
+	p->s_minfo.mi_alloc = ISMEMALILGN;
+	return (aligned);
+}
+
+int	posix_memalign(void **memptr, size_t alignment, size_t size)
+{
+	void	*mem;
+
+	if ((alignment % sizeof(t_addr) != 0) || alignment == 0)
+		return (EINVAL);
+	else if (is_powerof2(alignment) == 0)
+		return (EINVAL);
+	mem = internal_memalign(alignment, size, (char*)0, 0, 0);
+	if (mem != 0)
+	{
+		*memptr = mem;
+		return (0);
+	}
+	return (ENOMEM);
+}
 void  internal_cfree(t_addr p, const char *file, int line, int flags)
 {
 	internal_free(p, file, line, flags|MALLOC_INTERNAL);	

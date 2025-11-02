@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:10:09 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 00:20:32 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 12:59:59 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -157,8 +157,8 @@ typedef union u_mhead
 		uint8_t		mi_alloc;		// ISALLOC OR ISFREE states
 		uint8_t		mi_index;		// index in nextf[]
 		uint16_t	mi_magic2;		// should be MAGIC2 // *2
-		uint32_t	mi_nnbytes;		// # of bytes allocated // *4
-		uint8_t		mi_nbytes8[8];	// MAGIC1 guard bytes // 8
+		uint32_t	mi_nbytes;		// # of bytes allocated // *4
+		uint8_t		mi_magic8[8];	// MAGIC1 guard bytes // 8
 	}	s_minfo;
 }	t_mhead;
 
@@ -312,5 +312,6 @@ size_t		allocated_bytes(size_t n);
 void		compute_stats_core(t_glob *g, int nu, int flag, size_t value);
 void		compute_stats_brk(t_glob *g, size_t value);
 void		compute_stats_mmap(t_glob *g, size_t value);
+int			is_powerof2(int x);
 
 #endif

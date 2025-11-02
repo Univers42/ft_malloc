@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:10:09 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 14:46:40 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 15:05:21 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -159,6 +159,30 @@ typedef union u_mhead
 	} s_minfo;
 } t_mhead;
 
+/* Compilation mode selection */
+#ifdef USE_HYBRID_MODE
+#define USE_SBRK_FOR_TINY_SMALL 1 /* Use sbrk for TINY/SMALL (fast) */
+#else
+#define USE_SBRK_FOR_TINY_SMALL 0 /* Pure mmap mode (project requirement) */
+#endif
+
+#define TINY_MAX_SIZE 128
+#define SMALL_MAX_SIZE 1024
+#define TINY_ZONE_SIZE (getpagesize() * 4)	 /* 16KB zone for TINY */
+#define SMALL_ZONE_SIZE (getpagesize() * 32) /* 128KB zone for SMALL */
+#define MIN_BLOCKS_PER_ZONE 100
+
+typedef struct s_zone
+{
+	void *start;		 /* Zone start address */
+	void *end;			 /* Zone end address */
+	size_t block_size;	 /* Size of blocks in this zone */
+	size_t total_blocks; /* Total blocks in zone */
+	size_t used_blocks;	 /* Number of allocated blocks */
+	struct s_zone *next; /* Next zone in list */
+	t_mhead *free_list;	 /* Free blocks in this zone */
+} t_zone;
+
 typedef struct s_glob
 {
 	int pagesz;
@@ -168,12 +192,14 @@ typedef struct s_glob
 	char busy[NBUCKETS];
 	t_mhead *nextf[NBUCKETS];
 	uint64_t binsizes[NBUCKETS];
-	// future feature
 	int malloc_flags;
 	int malloc_trace;
 	int malloc_register;
 	int malloc_mmap_threshold;
 	int errn;
+	t_zone *tiny_zones;	 /* Zones for 1-128 byte allocations */
+	t_zone *small_zones; /* Zones for 129-1024 byte allocations */
+	void *large_list;	 /* Individual mmap allocations >1024 bytes */
 } t_glob;
 
 #ifdef DEBUG
@@ -341,5 +367,12 @@ void malloc_unblock_signals(sigset_t *setp, sigset_t *osetp);
 void show_alloc_mem(void);
 void track_allocation(void *ptr, size_t size);
 void untrack_allocation(void *ptr);
+
+/* Zone management functions */
+t_zone *create_zone(size_t block_size, size_t zone_size);
+t_zone *get_zone_with_space(t_zone **zone_list, size_t block_size, size_t zone_size);
+void *allocate_from_zone(t_zone *zone);
+void free_to_zone(t_zone *zone, t_mhead *block);
+t_zone *find_zone_for_ptr(t_zone *zone_list, void *ptr);
 
 #endif

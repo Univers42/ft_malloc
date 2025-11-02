@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/01 13:50:55 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 14:49:02 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/02 15:12:40 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -116,8 +116,10 @@ static void test_multiple_sizes(void)
 		{
 			fprintf(stderr, "ft_malloc(%zu) failed\n", sizes[i]);
 			while (--i >= 0)
+			{
 				ft_free(ptrs[i]);
-			return;
+				return;
+			}
 		}
 		memset(ptrs[i], 'A' + i, sizes[i]);
 		i++;
@@ -237,6 +239,11 @@ int main(void)
 	test_stress();
 	test_large_alloc();
 	test_realloc_patterns();
+
+	printf("\n╔═══════════════════════════════════════╗\n");
+	printf("║   Final Memory State (Leak Check)     ║\n");
+	printf("╚═══════════════════════════════════════╝\n");
+	show_alloc_mem(); // ← Shows leaks if any remain
 
 	printf("\n╔═══════════════════════════════════════╗\n");
 	printf("║   All tests completed successfully!   ║\n");

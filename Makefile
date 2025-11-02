@@ -63,6 +63,13 @@ GREEN = \033[0;32m
 RED = \033[0;31m
 RESET = \033[0m
 
+# Compilation modes
+# Default: pure mmap (for 42 project)
+# Hybrid: sbrk for small, mmap for large (optimized)
+ifdef HYBRID
+	CFLAGS += -DUSE_HYBRID_MODE
+endif
+
 all: $(BINDIR)/$(NAME) $(TESTBIN)
 
 $(BINDIR)/$(NAME): $(OBJS)

@@ -50,6 +50,15 @@ void    *realloc(void *ptr, size_t old, size_t new)
     }
     return (tmp);
 }
-
 ```
+This is the kind of behavior expect when we're creating the realloc, but one thing to notice, internally the realloc is capable of starting from where the allocation has ended. This track is due to a complex structure and various optimization accross years and years of work!
+
 ## Free
+function that deallocates the mmeory allocation pointed to by ptr. if ptr is a NULL pointer, no operation is performed.
+
+## Features
+
+We have to think modular and performances...
+The size of these zones must be a multiple of getpagesize() under osX or sysconf(_SC_PAGESIZE)
+under linux
+

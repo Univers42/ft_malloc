@@ -37,26 +37,31 @@ CORE_SRCS = $(CORE_DIR)/malloc.c \
             $(CORE_DIR)/ft_mremap.c
 
 HELPERS_SRCS = $(HELPERS_DIR)/accessors.c \
-               $(HELPERS_DIR)/bcoalesce.c \
-               $(HELPERS_DIR)/bcoalesce_helpers.c \
-               $(HELPERS_DIR)/bsplit.c \
-               $(HELPERS_DIR)/botch.c \
-               $(HELPERS_DIR)/buckets.c \
-               $(HELPERS_DIR)/chain.c \
-               $(HELPERS_DIR)/dyn_core.c \
-               $(HELPERS_DIR)/imalloc.c \
-               $(HELPERS_DIR)/init.c \
-               $(HELPERS_DIR)/pagealign.c \
-               $(HELPERS_DIR)/signals.c \
-               $(HELPERS_DIR)/find_adjacent.c \
-               $(HELPERS_DIR)/singletons.c \
-               $(HELPERS_DIR)/xsplit.c \
-               $(HELPERS_DIR)/bsplit_helpers.c \
-               $(HELPERS_DIR)/dyn_core_helper.c
+                $(HELPERS_DIR)/bcoalesce.c \
+                $(HELPERS_DIR)/bcoalesce_helpers.c \
+                $(HELPERS_DIR)/bsplit.c \
+                $(HELPERS_DIR)/botch.c \
+                $(HELPERS_DIR)/buckets.c \
+                $(HELPERS_DIR)/chain.c \
+                $(HELPERS_DIR)/dyn_core.c \
+                $(HELPERS_DIR)/init.c \
+                $(HELPERS_DIR)/pagealign.c \
+                $(HELPERS_DIR)/signals.c \
+                $(HELPERS_DIR)/find_adjacent.c \
+                $(HELPERS_DIR)/singletons.c \
+                $(HELPERS_DIR)/xsplit.c \
+                $(HELPERS_DIR)/bsplit_helpers.c \
+                $(HELPERS_DIR)/dyn_core_helper.c \
+                $(HELPERS_DIR)/fastcopy.c \
+                $(HELPERS_DIR)/zero.c \
+                $(HELPERS_DIR)/bzero.c \
+                $(HELPERS_DIR)/memset.c \
+                $(HELPERS_DIR)/zone_manager_helps.c \
+                $(HELPERS_DIR)/pagealign_helpers.c
 
 DEBUG_SRCS = $(DEBUG_DIR)/stats.c \
-             $(DEBUG_DIR)/helper.c \
-             $(DEBUG_DIR)/show_alloc.c
+                $(DEBUG_DIR)/helper.c \
+                $(DEBUG_DIR)/show_alloc.c
 
 UTILS_SRCS = $(UTILS_DIR)/powerof2.c
 

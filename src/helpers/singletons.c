@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/24 15:27:03 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/24 15:27:11 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/24 20:17:26 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,8 @@
  */
 t_addr	state_mem_singleton(t_addr mem, int set)
 {
-	static t_addr last_mem = NULL;
+	static t_addr	last_mem = NULL;
+
 	if (set)
 		last_mem = mem;
 	return (last_mem);

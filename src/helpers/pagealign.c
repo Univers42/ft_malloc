@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/01 20:11:52 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 14:37:12 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/24 20:18:26 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,76 +14,97 @@
 #include "get_page_size.h"
 #include <unistd.h>
 #include <stdint.h>
+#include <string.h>
 
-int pagealign(void)
+long	compute_sbrk_needed(char *curbrk, int pagesz);
+int		perform_sbrk_and_update_memtop(long sbrk_needed,
+			char **out_curbrk,
+			t_glob *g);
+
+static int	init_pagesize(t_glob *g)
 {
-    t_glob *g;
-    int nunits;
-    t_mhead *mp;
-    long sbrk_needed;
-    char *curbrk;
-    void *sret;
+	if (!g)
+		return (-1);
+	g->pagesz = get_page_size();
+	if (g->pagesz < MALLOC_PAGESIZE_MIN)
+		g->pagesz = MALLOC_PAGESIZE_MIN;
+	return (0);
+}
 
-    g = get_glob(GLOB_NONE, NULL);
-    if (!g)
-        return (-1);
+static void	populate_prepop_chain(t_glob *g, char *curbrk,
+									long sbrk_needed)
+{
+	int		nunits;
+	t_mhead	*mp;
+	long	adj;
 
-    g->pagesz = get_page_size();
-    if (g->pagesz < MALLOC_PAGESIZE_MIN)
-        g->pagesz = MALLOC_PAGESIZE_MIN;
+	adj = sbrk_needed & (PREPOP_SIZE - 1);
+	curbrk += adj;
+	sbrk_needed -= adj;
+	nunits = (int)(sbrk_needed / PREPOP_SIZE);
+	if (nunits <= 0)
+		return ;
+	mp = (t_mhead *)curbrk;
+	g->nextf[PREPOP_BIN] = mp;
+	while (1)
+	{
+		mp->s_minfo.mi_alloc = ISFREE;
+		mp->s_minfo.mi_index = (char)PREPOP_BIN;
+		if (--nunits <= 0)
+			break ;
+		*chain_ptr(mp) = (t_mhead *)((char *)mp + PREPOP_SIZE);
+		mp = (t_mhead *)((char *)mp + PREPOP_SIZE);
+	}
+	*chain_ptr(mp) = NULL;
+}
 
-    /* initialize memtop and compute how much to advance break to be page aligned */
-    g->memtop = sbrk(0);
-    curbrk = sbrk(0);
-    sbrk_needed = g->pagesz - ((long)curbrk & (g->pagesz - 1));
-    if (sbrk_needed < 0)
-        sbrk_needed += g->pagesz;
+static int	prepopulate_prepop(t_glob *g, long sbrk_needed)
+{
+	char	*curbrk;
+	int		ret;
 
-    /* allocate the wasted partial page and populate PREPOP bin with 64-byte chunks */
-    if (sbrk_needed)
-    {
-        compute_stats_brk(g, sbrk_needed);
-        sret = sbrk(sbrk_needed);
-        if (sret == (t_addr)-1)
-            return (-1);
-        curbrk = sbrk(sbrk_needed);
-        if ((long)curbrk == -1)
-            return (-1);
-        g->memtop += sbrk_needed;
+	if (sbrk_needed == 0)
+		return (0);
+	compute_stats_brk(g, sbrk_needed);
+	ret = perform_sbrk_and_update_memtop(sbrk_needed, &curbrk, g);
+	if (ret == -1)
+		return (-1);
+	populate_prepop_chain(g, curbrk, sbrk_needed);
+	return (0);
+}
 
-        /* align curbrk to PREPOP_SIZE, compute number of chunks */
-        curbrk += sbrk_needed & (PREPOP_SIZE - 1);
-        sbrk_needed -= sbrk_needed & (PREPOP_SIZE - 1);
-        nunits = (int)(sbrk_needed / PREPOP_SIZE);
+static void	compute_pagebucket(t_glob *g)
+{
+	int	nunits;
 
-        if (nunits > 0)
-        {
-            mp = (t_mhead *)curbrk;
-            g->nextf[PREPOP_BIN] = mp;
+	nunits = 7;
+	while (nunits < NBUCKETS)
+	{
+		if ((uint64_t)g->pagesz <= g->binsizes[(size_t)nunits])
+			break ;
+		nunits++;
+	}
+	g->pagebucket = nunits;
+}
 
-            /* build chain of PREPOP_SIZE blocks using while only */
-            while (1)
-            {
-                mp->s_minfo.mi_alloc = ISFREE;
-                mp->s_minfo.mi_index = (char)PREPOP_BIN;
-                if (--nunits <= 0)
-                    break;
-                *chain_ptr(mp) = (t_mhead *)((char *)mp + PREPOP_SIZE);
-                mp = (t_mhead *)((char *)mp + PREPOP_SIZE);
-            }
-            *chain_ptr(mp) = NULL;
-        }
-    }
+int	pagealign(void)
+{
+	t_glob	*g;
+	char	*curbrk;
+	long	sbrk_needed;
+	int		ret;
 
-    /* compute which bin corresponds to the page size (use while) */
-    nunits = 7;
-    while (nunits < NBUCKETS)
-    {
-        if ((uint64_t)g->pagesz <= g->binsizes[(size_t)nunits])
-            break;
-        nunits++;
-    }
-    g->pagebucket = nunits;
-
-    return (0);
+	g = get_glob(GLOB_NONE, NULL);
+	if (!g)
+		return (-1);
+	if (init_pagesize(g) == -1)
+		return (-1);
+	g->memtop = sbrk(0);
+	curbrk = sbrk(0);
+	sbrk_needed = compute_sbrk_needed(curbrk, g->pagesz);
+	ret = prepopulate_prepop(g, sbrk_needed);
+	if (ret == -1)
+		return (-1);
+	compute_pagebucket(g);
+	return (0);
 }

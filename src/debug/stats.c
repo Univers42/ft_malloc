@@ -6,147 +6,66 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:58:21 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/24 16:22:30 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/24 21:44:39 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "alloc.h"
 
 #ifdef MALLOC_STATS
-void compute_stats_core(t_glob *g, int nu, int flag, size_t value)
-{
-    if (!g)
-        return;
 
-    if (flag == STAT_LESS_CORE)
-    {
-        if ((size_t)nu >= NBUCKETS)
-            return;
-        g->mstats.nsbrk++;
-        g->mstats.tsbrk -= (long)value;
-        g->mstats.nlesscore[nu]++;
-        g->mstats.nfre++;
-    }
-    else if (flag == STAT_MMAP)
-    {
-        g->mstats.nmmap++;
-        g->mstats.tmmap += (long)value;
-    }
-    else if (flag == STAT_BRK)
-    {
-        g->mstats.nsbrk++;
-        g->mstats.tsbrk += (long)value;
-    }
-    else if (flag == STAT_REALLOC)
-        g->mstats.nrealloc++;
-    else /* STAT_MORE_CORE */
-    {
-        if ((size_t)nu >= NBUCKETS)
-            return;
-        g->mstats.nsbrk++;
-        g->mstats.tsbrk += (long)value;
-        g->mstats.nmorecore[nu]++;
-    }
-}
+void	handle_less_core(t_glob *g, int nu, size_t value);
+void	handle_mmap(t_glob *g, size_t value);
+void	handle_brk(t_glob *g, size_t value);
+void	handle_realloc(t_glob *g);
+void	handle_more_core(t_glob *g, int nu, size_t value);
 
-int malloc_free_blocks(int size, t_glob *g)
+void	compute_stats_core(t_glob *g, int nu, int flag, size_t value)
 {
-    int nfree;
-    t_mhead *p;
-
-    nfree = 0;
-    p = g->nextf[size];
-    while (p)
-    {
-        g->mstats.nfree++;
-        p = chain(p);
-    }
-    return (g->mstats.nfree);
-}
-
-void compute_stats_brk(t_glob *g, size_t value)
-{
-    compute_stats_core(g, 0, STAT_BRK, value);
-}
-
-void compute_stats_mmap(t_glob *g, size_t value)
-{
-    compute_stats_core(g, 0, STAT_MMAP, value);
-}
-
-void compute_stats_realloc_copy(t_glob *g)
-{
-    if (g)
-        g->mstats.nrcopy++;
-}
-#else
-void compute_stats_core(t_glob *g, int nu, int flag, size_t value)
-{
-    (void)g;
-    (void)nu;
-    (void)flag;
-    (void)value;
-}
-
-void compute_stats_brk(t_glob *g, size_t value)
-{
-    (void)g;
-    (void)value;
-}
-
-void compute_stats_mmap(t_glob *g, size_t value)
-{
-    (void)g;
-    (void)value;
-}
-
-void compute_stats_realloc_copy(t_glob *g)
-{
-    (void)g;
-}
-
-#ifdef MALLOC_STATS
-void	bsplit_stats_inc(int nbuck)
-{
-    _mstats.tbsplit++;
-    _mstats.nsplit[nbuck]++;
-}
-#else
-void	bsplit_stats_inc(int nbuck)
-{
-    (void)nbuck;
-}
-#endif
-
-#ifdef MALLOC_STATS
-
-void	morecore_stat_nmorecore(int nu, t_glob *g)
-{
-	if (g)
-		g->mstats.nmorecore[nu]++;
-}
-
-void	morecore_stat_nsbrk(long s, t_glob *g)
-{
-	if (g)
+	if (!g)
+		return ;
+	if (flag == STAT_LESS_CORE)
 	{
-		g->mstats.nsbrk++;
-		g->mstats.tsbrk += s;
+		handle_less_core(g, nu, value);
+		return ;
 	}
+	if (flag == STAT_MMAP)
+	{
+		handle_mmap(g, value);
+		return ;
+	}
+	if (flag == STAT_BRK)
+	{
+		handle_brk(g, value);
+		return ;
+	}
+	if (flag == STAT_REALLOC)
+	{
+		handle_realloc(g);
+		return ;
+	}
+	handle_more_core(g, nu, value);
 }
+
+void	compute_stats_realloc_copy(t_glob *g)
+{
+	if (g)
+		g->mstats.nrcopy++;
+}
+
 #else
 
-void	morecore_stat_nmorecore(int nu, t_glob *g)
+void	compute_stats_core(t_glob *g, int nu, int flag, size_t value)
 {
-	(void)nu;
 	(void)g;
+	(void)nu;
+	(void)flag;
+	(void)value;
 }
 
-void	morecore_stat_nsbrk(long s, t_glob *g)
+void	compute_stats_realloc_copy(t_glob *g)
 {
-	(void)s;
 	(void)g;
 }
-#endif
 
 #endif

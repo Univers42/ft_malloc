@@ -57,11 +57,21 @@ HELPERS_SRCS = $(HELPERS_DIR)/accessors.c \
                 $(HELPERS_DIR)/bzero.c \
                 $(HELPERS_DIR)/memset.c \
                 $(HELPERS_DIR)/zone_manager_helps.c \
-                $(HELPERS_DIR)/pagealign_helpers.c
+                $(HELPERS_DIR)/pagealign_helpers.c \
+                $(HELPERS_DIR)/malloc_block_signals.c\
+                $(HELPERS_DIR)/malloc_unblock_signals.c
 
 DEBUG_SRCS = $(DEBUG_DIR)/stats.c \
                 $(DEBUG_DIR)/helper.c \
-                $(DEBUG_DIR)/show_alloc.c
+                $(DEBUG_DIR)/show_alloc.c \
+                $(DEBUG_DIR)/stat_utils.c \
+                $(DEBUG_DIR)/stat_utils2.c \
+                $(DEBUG_DIR)/stat_utils3.c \
+                $(DEBUG_DIR)/stat_utils4.c \
+                $(DEBUG_DIR)/stats.c \
+                $(DEBUG_DIR)/table.c \
+                $(DEBUG_DIR)/trace.c \
+                $(DEBUG_DIR)/watch.c
 
 UTILS_SRCS = $(UTILS_DIR)/powerof2.c
 

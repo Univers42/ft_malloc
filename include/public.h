@@ -1,13 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   table.c                                            :+:      :+:    :+:   */
+/*   public.h                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/31 17:58:28 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/24 20:49:03 by dlesieur         ###   ########.fr       */
+/*   Created: 2025/11/24 22:32:11 by dlesieur          #+#    #+#             */
+/*   Updated: 2025/11/24 22:33:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "alloc.h"
+#ifndef PUBLIC_H
+# define PUBLIC_H
+
+/**
+ * Public api of our system
+ * This is just nomenclature to guide user where they should look into 
+ * the repo.
+ */
+
+#endif

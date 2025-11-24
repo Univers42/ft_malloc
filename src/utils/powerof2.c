@@ -6,14 +6,14 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/01 20:05:42 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 14:30:35 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/24 13:11:24 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 /**
  * could also use (((x) & -(x)) == x);
  */
-int is_powerof2(int x)
+int	is_powerof2(int x)
 {
-    return (((x - 1) & x) == 0);
+	return (((x - 1) & x) == 0);
 }

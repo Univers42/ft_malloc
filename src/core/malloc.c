@@ -6,11 +6,18 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 18:56:10 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 15:05:21 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/24 15:12:02 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "alloc.h"
+
+/* Declare singleton accessors locally to avoid implicit-declaration errors.
+ * Header should already declare these; adding them here ensures the compile
+ * unit knows about them even if some include paths differ.
+ */
+void set_state_mem(t_addr mem);
+t_addr get_state_mem(void);
 
 #ifdef MEMSCRAMBLE
 static void scramble_allocated_memory(void *mem, size_t n)
@@ -196,7 +203,10 @@ static t_mhead *get_block_from_freelist(int nunits, t_glob *g)
 static void validate_free_block(t_mhead *p, int nunits, const char *file, int line)
 {
 	if (p->s_minfo.mi_alloc != ISFREE || p->s_minfo.mi_index != nunits)
-		xbotch((t_addr)(p + 1), 0, "malloc: block on free list clobbered", file, line);
+	{
+		set_state_mem((t_addr)(p + 1));
+		xbotch(ERR_ASSERT_FAILED, "malloc: block on free list clobbered", file, line);
+	}
 }
 
 static void setup_block_header(t_mhead *p, size_t n)

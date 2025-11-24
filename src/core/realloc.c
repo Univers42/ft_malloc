@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/02 00:38:30 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 14:33:40 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/24 15:19:42 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,12 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <string.h>
+
+/* Ensure singleton accessor prototypes are visible in this TU to avoid
+ * implicit-function-declaration errors when calling set_state_mem/get_state_mem.
+ */
+void set_state_mem(t_addr mem);
+t_addr get_state_mem(void);
 
 /* round up to pages */
 #if USE_MREMAP == 1
@@ -151,7 +157,10 @@ mremap_implement(t_addr mem, size_t n, int newunits, uint32_t tocopy,
 void assert_or_abort(int cond, const char *expr, const char *file, int line)
 {
     if (!cond)
-        xbotch((t_addr)0, ERR_ASSERT_FAILED, (char *)expr, file, line);
+    {
+        set_state_mem((t_addr)0);
+        xbotch(ERR_ASSERT_FAILED, (char *)expr, file, line);
+    }
 }
 
 /**
@@ -198,7 +207,10 @@ internal_realloc(t_addr mem, size_t n, const char *file, int line, int flags)
 
     /* basic validation */
     if (p->s_minfo.mi_alloc != ISALLOC)
-        xbotch(mem, ERR_UNALLOC, "realloc: called with unallocated block argument", file, line);
+    {
+        set_state_mem(mem);
+        xbotch(ERR_UNALLOC, "realloc: called with unallocated block argument", file, line);
+    }
     assert_or_abort(p->s_minfo.mi_magic2 == MAGIC2, "p->s_minfo.mi_magic2 == MAGIC2", file, line);
 
     /* underflow / magic8 check */
@@ -207,7 +219,10 @@ internal_realloc(t_addr mem, size_t n, const char *file, int line, int flags)
     while (i < MAGIC8_NUMBYTES)
     {
         if (*z++ != MAGIC1)
-            xbotch(mem, ERR_UNDERFLOW, "realloc: underflow detected; magic8 corrupted", file, line);
+        {
+            set_state_mem(mem);
+            xbotch(ERR_UNDERFLOW, "realloc: underflow detected; magic8 corrupted", file, line);
+        }
         i++;
     }
 
@@ -224,7 +239,10 @@ internal_realloc(t_addr mem, size_t n, const char *file, int line, int flags)
     *z++ = (uint8_t)*m++;
     *z++ = (uint8_t)*m++;
     if (mg.i != p->s_minfo.mi_nbytes)
-        xbotch(mem, ERR_ASSERT_FAILED, "realloc: start and end chunk sizes differ", file, line);
+    {
+        set_state_mem(mem);
+        xbotch(ERR_ASSERT_FAILED, "realloc: start and end chunk sizes differ", file, line);
+    }
 
     /* no change */
     if (n == p->s_minfo.mi_nbytes)

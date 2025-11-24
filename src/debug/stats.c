@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:58:21 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 14:46:38 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/24 16:22:30 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,4 +104,49 @@ void compute_stats_realloc_copy(t_glob *g)
 {
     (void)g;
 }
+
+#ifdef MALLOC_STATS
+void	bsplit_stats_inc(int nbuck)
+{
+    _mstats.tbsplit++;
+    _mstats.nsplit[nbuck]++;
+}
+#else
+void	bsplit_stats_inc(int nbuck)
+{
+    (void)nbuck;
+}
+#endif
+
+#ifdef MALLOC_STATS
+
+void	morecore_stat_nmorecore(int nu, t_glob *g)
+{
+	if (g)
+		g->mstats.nmorecore[nu]++;
+}
+
+void	morecore_stat_nsbrk(long s, t_glob *g)
+{
+	if (g)
+	{
+		g->mstats.nsbrk++;
+		g->mstats.tsbrk += s;
+	}
+}
+#else
+
+void	morecore_stat_nmorecore(int nu, t_glob *g)
+{
+	(void)nu;
+	(void)g;
+}
+
+void	morecore_stat_nsbrk(long s, t_glob *g)
+{
+	(void)s;
+	(void)g;
+}
+#endif
+
 #endif

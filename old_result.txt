@@ -1,0 +1,174 @@
+╔═══════════════════════════════════════╗
+║   FT_MALLOC Comprehensive Test Suite  ║
+╚═══════════════════════════════════════╝
+
+=== Test 1: Basic allocation ===
+Allocated 64 bytes: Hello from ft_malloc!
+TINY : 0x7acedcbb9010
+0x7acedcbb9010 - 0x7acedcbb9050 : 64 bytes
+Total : 64 bytes
+Freed successfully
+
+=== Test 2: Realloc ===
+Original (32 bytes): Small
+After realloc (128 bytes): Small -> Bigger
+TINY : 0x7acedcbb8010
+0x7acedcbb8010 - 0x7acedcbb8090 : 128 bytes
+Total : 128 bytes
+Freed successfully
+
+=== Test 3: Calloc (zeroed memory) ===
+Allocated 20 ints, all zero: YES
+Set values: arr[0]=0, arr[10]=100, arr[19]=190
+TINY : 0x7acedcbb9010
+0x7acedcbb9010 - 0x7acedcbb9060 : 80 bytes
+Total : 80 bytes
+Freed successfully
+
+=== Test 4: Multiple allocation sizes ===
+Allocated 10 blocks of varying sizes
+TINY : 0x63880553c010
+0x63880553c010 - 0x63880553c018 : 8 bytes
+0x63880553b010 - 0x63880553b020 : 16 bytes
+0x63880553b050 - 0x63880553b070 : 32 bytes
+0x7acedcbb9010 - 0x7acedcbb9050 : 64 bytes
+0x7acedcbb8010 - 0x7acedcbb8090 : 128 bytes
+SMALL : 0x7acedcbb7010
+0x7acedcbb7010 - 0x7acedcbb7110 : 256 bytes
+0x7acedcbb6010 - 0x7acedcbb6210 : 512 bytes
+0x7acedcbb5010 - 0x7acedcbb5410 : 1024 bytes
+LARGE : 0x7acedcbb4010
+0x7acedcbb4010 - 0x7acedcbb4810 : 2048 bytes
+0x7acedcbb2010 - 0x7acedcbb3010 : 4096 bytes
+Total : 8184 bytes
+Freed all blocks successfully
+
+=== Test 5: Stress test (100 allocations) ===
+Successfully allocated 100/100 blocks
+TINY : 0x63880553b050
+0x63880553b050 - 0x63880553b060 : 16 bytes
+0x63880553b010 - 0x63880553b031 : 33 bytes
+0x7acedcbb9010 - 0x7acedcbb9042 : 50 bytes
+0x7acedcbb9090 - 0x7acedcbb90d3 : 67 bytes
+0x7acedcbb9110 - 0x7acedcbb9164 : 84 bytes
+0x7acedcbb9190 - 0x7acedcbb91f5 : 101 bytes
+0x7acedcbb8010 - 0x7acedcbb8086 : 118 bytes
+0x63880553b090 - 0x63880553b0aa : 26 bytes
+0x63880553b0d0 - 0x63880553b0fb : 43 bytes
+0x7acedcbb9210 - 0x7acedcbb924c : 60 bytes
+0x7acedcbb9290 - 0x7acedcbb92dd : 77 bytes
+0x7acedcbb9310 - 0x7acedcbb936e : 94 bytes
+0x7acedcbb8710 - 0x7acedcbb877f : 111 bytes
+0x7acedcbb8810 - 0x7acedcbb8890 : 128 bytes
+0x63880553b110 - 0x63880553b123 : 19 bytes
+0x63880553b150 - 0x63880553b174 : 36 bytes
+0x7acedcbb9390 - 0x7acedcbb93c5 : 53 bytes
+0x7acedcbb9410 - 0x7acedcbb9456 : 70 bytes
+0x7acedcbb9490 - 0x7acedcbb94e7 : 87 bytes
+0x7acedcbb9510 - 0x7acedcbb9578 : 104 bytes
+0x7acedcbb8f10 - 0x7acedcbb8f89 : 121 bytes
+0x63880553b190 - 0x63880553b1ad : 29 bytes
+0x7acedcbb9590 - 0x7acedcbb95be : 46 bytes
+0x7acedcbb9610 - 0x7acedcbb964f : 63 bytes
+0x7acedcbb9690 - 0x7acedcbb96e0 : 80 bytes
+0x7acedcbb9710 - 0x7acedcbb9771 : 97 bytes
+0x7acedcbae610 - 0x7acedcbae682 : 114 bytes
+SMALL : 0x7acedcbb8110
+0x7acedcbb8110 - 0x7acedcbb8197 : 135 bytes
+0x7acedcbb8210 - 0x7acedcbb82a8 : 152 bytes
+0x7acedcbb8310 - 0x7acedcbb83b9 : 169 bytes
+0x7acedcbb8410 - 0x7acedcbb84ca : 186 bytes
+0x7acedcbb8510 - 0x7acedcbb85db : 203 bytes
+0x7acedcbb8610 - 0x7acedcbb86ec : 220 bytes
+0x7acedcbb7010 - 0x7acedcbb70fd : 237 bytes
+0x7acedcbb7210 - 0x7acedcbb730e : 254 bytes
+0x7acedcbb7410 - 0x7acedcbb751f : 271 bytes
+0x7acedcbb7610 - 0x7acedcbb7730 : 288 bytes
+0x7acedcbb7810 - 0x7acedcbb7941 : 305 bytes
+0x7acedcbb7a10 - 0x7acedcbb7b52 : 322 bytes
+0x7acedcbb7c10 - 0x7acedcbb7d63 : 339 bytes
+0x7acedcbb7e10 - 0x7acedcbb7f74 : 356 bytes
+0x7acedcbb1010 - 0x7acedcbb1185 : 373 bytes
+0x7acedcbb1210 - 0x7acedcbb1396 : 390 bytes
+0x7acedcbb1410 - 0x7acedcbb15a7 : 407 bytes
+0x7acedcbb1610 - 0x7acedcbb17b8 : 424 bytes
+0x7acedcbb1810 - 0x7acedcbb19c9 : 441 bytes
+0x7acedcbb1a10 - 0x7acedcbb1bda : 458 bytes
+0x7acedcbb1c10 - 0x7acedcbb1deb : 475 bytes
+0x7acedcbb1e10 - 0x7acedcbb1ffc : 492 bytes
+0x7acedcbb6010 - 0x7acedcbb620d : 509 bytes
+0x7acedcbb8910 - 0x7acedcbb89a1 : 145 bytes
+0x7acedcbb8a10 - 0x7acedcbb8ab2 : 162 bytes
+0x7acedcbb8b10 - 0x7acedcbb8bc3 : 179 bytes
+0x7acedcbb8c10 - 0x7acedcbb8cd4 : 196 bytes
+0x7acedcbb8d10 - 0x7acedcbb8de5 : 213 bytes
+0x7acedcbb8e10 - 0x7acedcbb8ef6 : 230 bytes
+0x7acedcbb0010 - 0x7acedcbb0107 : 247 bytes
+0x7acedcbb0210 - 0x7acedcbb0318 : 264 bytes
+0x7acedcbb0410 - 0x7acedcbb0529 : 281 bytes
+0x7acedcbb0610 - 0x7acedcbb073a : 298 bytes
+0x7acedcbb0810 - 0x7acedcbb094b : 315 bytes
+0x7acedcbb0a10 - 0x7acedcbb0b5c : 332 bytes
+0x7acedcbb0c10 - 0x7acedcbb0d6d : 349 bytes
+0x7acedcbb0e10 - 0x7acedcbb0f7e : 366 bytes
+0x7acedcbaf010 - 0x7acedcbaf18f : 383 bytes
+0x7acedcbaf210 - 0x7acedcbaf3a0 : 400 bytes
+0x7acedcbaf410 - 0x7acedcbaf5b1 : 417 bytes
+0x7acedcbaf610 - 0x7acedcbaf7c2 : 434 bytes
+0x7acedcbaf810 - 0x7acedcbaf9d3 : 451 bytes
+0x7acedcbafa10 - 0x7acedcbafbe4 : 468 bytes
+0x7acedcbafc10 - 0x7acedcbafdf5 : 485 bytes
+0x7acedcbb6410 - 0x7acedcbb6606 : 502 bytes
+0x7acedcbae010 - 0x7acedcbae09a : 138 bytes
+0x7acedcbae110 - 0x7acedcbae1ab : 155 bytes
+0x7acedcbae210 - 0x7acedcbae2bc : 172 bytes
+0x7acedcbae310 - 0x7acedcbae3cd : 189 bytes
+0x7acedcbae410 - 0x7acedcbae4de : 206 bytes
+0x7acedcbae510 - 0x7acedcbae5ef : 223 bytes
+0x7acedcbafe10 - 0x7acedcbaff00 : 240 bytes
+0x7acedcbad010 - 0x7acedcbad111 : 257 bytes
+0x7acedcbad210 - 0x7acedcbad322 : 274 bytes
+0x7acedcbad410 - 0x7acedcbad533 : 291 bytes
+0x7acedcbad610 - 0x7acedcbad744 : 308 bytes
+0x7acedcbad810 - 0x7acedcbad955 : 325 bytes
+0x7acedcbada10 - 0x7acedcbadb66 : 342 bytes
+0x7acedcbadc10 - 0x7acedcbadd77 : 359 bytes
+0x7acedcbade10 - 0x7acedcbadf88 : 376 bytes
+0x7acedcbac010 - 0x7acedcbac199 : 393 bytes
+0x7acedcbac210 - 0x7acedcbac3aa : 410 bytes
+0x7acedcbac410 - 0x7acedcbac5bb : 427 bytes
+0x7acedcbac610 - 0x7acedcbac7cc : 444 bytes
+0x7acedcbac810 - 0x7acedcbac9dd : 461 bytes
+0x7acedcbaca10 - 0x7acedcbacbee : 478 bytes
+0x7acedcbb6810 - 0x7acedcbb69ff : 495 bytes
+0x7acedcbb6c10 - 0x7acedcbb6e10 : 512 bytes
+0x7acedcbae710 - 0x7acedcbae793 : 131 bytes
+0x7acedcbae810 - 0x7acedcbae8a4 : 148 bytes
+0x7acedcbae910 - 0x7acedcbae9b5 : 165 bytes
+0x7acedcbaea10 - 0x7acedcbaeac6 : 182 bytes
+0x7acedcbaeb10 - 0x7acedcbaebd7 : 199 bytes
+Total : 24750 bytes
+Successfully freed 100 blocks
+
+=== Test 6: Large allocation ===
+Allocated 1MB successfully
+Filled with data successfully
+Freed successfully
+
+=== Test 7: Realloc chain ===
+Initial: Start (16 bytes)
+Realloc 1: 32 bytes
+Realloc 2: 64 bytes
+Realloc 3: 128 bytes
+Realloc 4: 256 bytes
+Realloc 5: 512 bytes
+Freed successfully
+
+╔═══════════════════════════════════════╗
+║   Final Memory State (Leak Check)     ║
+╚═══════════════════════════════════════╝
+Total : 0 bytes
+
+╔═══════════════════════════════════════╗
+║   All tests completed successfully!   ║
+╚═══════════════════════════════════════╝

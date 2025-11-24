@@ -6,11 +6,15 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/02 00:38:07 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 15:05:20 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/24 15:14:11 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "alloc.h"
+
+/* Ensure singleton accessor prototypes are visible in this TU */
+void set_state_mem(t_addr mem);
+t_addr get_state_mem(void);
 
 #ifdef USE_MMAP
 static int should_use_munmap(int nunits, int threshold)
@@ -152,12 +156,13 @@ static void handle_memalign(t_addr *mem, char **ap, t_mhead **p)
 
 static void validate_alloc_status(t_addr mem, t_mhead *p, const char *file, int line)
 {
+	set_state_mem(mem);
 	if (p->s_minfo.mi_alloc != ISALLOC)
 	{
 		if (p->s_minfo.mi_alloc == ISFREE)
-			xbotch(mem, ERR_DUPFREE, "free: called with already freed block argument", file, line);
+			xbotch(ERR_DUPFREE, "free: called with already freed block argument", file, line);
 		else
-			xbotch(mem, ERR_UNALLOC, "free: called with unallocated block argument", file, line);
+			xbotch(ERR_UNALLOC, "free: called with unallocated block argument", file, line);
 	}
 	assert_or_abort(p->s_minfo.mi_magic2 == MAGIC2, "p->s_minfo.mi_magic2 == MAGIC2", file, line);
 }
@@ -167,12 +172,13 @@ static void validate_magic8(t_mhead *p, t_addr mem, const char *file, int line)
 	int i;
 	uint8_t *z;
 
+	set_state_mem(mem);
 	i = 0;
 	z = (uint8_t *)p->s_minfo.mi_magic8;
 	while (i < MAGIC8_NUMBYTES)
 	{
 		if (*z++ != MAGIC1)
-			xbotch(mem, ERR_UNDERFLOW, "free: underflow detected; magic8 corrupted", file, line);
+			xbotch(ERR_UNDERFLOW, "free: underflow detected; magic8 corrupted", file, line);
 		i++;
 	}
 }
@@ -184,6 +190,7 @@ static void validate_end_guard(char *ap, t_mhead *p, t_addr mem, const char *fil
 	char *ap_end;
 	int i;
 
+	set_state_mem(mem);
 	ap_end = ap + p->s_minfo.mi_nbytes;
 	z = (char *)mg.s;
 	i = 0;
@@ -193,7 +200,7 @@ static void validate_end_guard(char *ap, t_mhead *p, t_addr mem, const char *fil
 		i++;
 	}
 	if (mg.i != p->s_minfo.mi_nbytes)
-		xbotch(mem, ERR_ASSERT_FAILED, "free: start and end chunk sizes differ", file, line);
+		xbotch(ERR_ASSERT_FAILED, "free: start and end chunk sizes differ", file, line);
 }
 
 static int handle_special_free_cases(t_mhead *p, int nunits, t_glob *g)
@@ -321,7 +328,10 @@ t_addr internal_free(t_addr mem, const char *file, int line, int flags)
 	nunits = p->s_minfo.mi_index;
 	nbytes = allocated_bytes(p->s_minfo.mi_nbytes);
 	if (in_bucket(nbytes, nunits) == 0)
-		xbotch(mem, ERR_UNDERFLOW, "free: underflow detected; mh_nbytes out of range", file, line);
+	{
+		set_state_mem(mem);
+		xbotch(ERR_UNDERFLOW, "free: underflow detected; mh_nbytes out of range", file, line);
+	}
 	validate_magic8(p, mem, file, line);
 	validate_end_guard(ap, p, mem, file, line);
 	freed = handle_special_free_cases(p, nunits, g);

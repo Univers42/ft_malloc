@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 19:14:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/01 19:03:03 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/24 14:27:48 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,6 +60,8 @@
 // #if !defined (getpagesize)
 // #  define getpagesize() 4096  /* Just punt and use reasonable value */
 // #endif
+
+
 
 
 /* Detect which sysconf selector is available */

@@ -6,109 +6,81 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/01 18:31:59 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/01 21:04:31 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/24 15:23:45 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "alloc.h"
 #include "get_page_size.h"
 
-/**
- * OK, now we have mp1 pointing to the block we want to add to nextf[NU].
- * chain(mp2) must equal mp1. chekc that mp1 and mp are adjacent
-*/
-#ifdef MALLOC_DEBUG
+/* forward declarations for helpers implemented in bcoalesce_helpers.c */
+void		ensure_chain(t_glob *g, t_mhead *mp1, t_mhead *mp2, int nbuck);
+int			bcoalesce_check_adjacent(t_mhead *mp1, t_glob *g,
+				int nbuck, unsigned long siz);
+void		bcoalesce_stats_inc(int nbuck);
+t_mhead		*find_adjacent(t_glob *g, int nbuck,
+				t_mhead **out_mp1, t_mhead **out_mp2);
 
-static int	bcoalesce_check_adjacent(t_mhead *mp1, t_glob *g,
-									int nbuck, unsigned long siz)
+static void	bcoalesce_set_blocks(t_glob *g, t_mhead *mp1, int nbuck, int nu)
 {
-	if (chain(mp1) != (t_mhead *)((char *)mp1 + siz))
+	g->busy[nbuck] = 0;
+	bcoalesce_stats_inc(nbuck);
+	mp1->s_minfo.mi_alloc = ISFREE;
+	mp1->s_minfo.mi_index = nu;
+	*chain_ptr(mp1) = g->nextf[nu];
+	g->nextf[nu] = mp1;
+}
+
+static void	bcoalesce_update_freelist_struct(t_bcoalesce_ctx *args)
+{
+	if (args->mp1 == args->g->nextf[args->nbuck])
+		args->g->nextf[args->nbuck] = chain(args->mp);
+	else
+		*chain_ptr(args->mp2) = chain(args->mp);
+}
+
+static int	bcoalesce_find_and_check(t_bcoalesce_ctx *ctx)
+{
+	ctx->mp = find_adjacent(ctx->g, ctx->nbuck, &ctx->mp1, &ctx->mp2);
+	if (ctx->mp == NULL)
 	{
-		g->busy[nbuck] = 0;
+		ctx->g->busy[ctx->nbuck] = 0;
+		return (0);
+	}
+	ensure_chain(ctx->g, ctx->mp1, ctx->mp2, ctx->nbuck);
+	if (!bcoalesce_check_adjacent(ctx->mp1, ctx->g,
+			ctx->nbuck, binsize(ctx->nbuck)))
+	{
+		ctx->g->busy[ctx->nbuck] = 0;
 		return (0);
 	}
 	return (1);
 }
-#else
 
-static int	bcoalesce_check_adjacent(t_mhead *mp1, t_glob *g,
-									int nbuck, unsigned long siz)
+static void	bcoalesce_update(t_bcoalesce_ctx *ctx)
 {
-	(void)mp1;
-	(void)g;
-	(void)nbuck;
-	(void)siz;
-	return (1);
+	t_bcoalesce_ctx	*args;
+
+	args = ctx;
+	bcoalesce_update_freelist_struct(args);
+	bcoalesce_set_blocks(ctx->g, ctx->mp1, ctx->nbuck, ctx->nu);
 }
-#endif
 
-#ifdef MALLOC_STATS
-
-static void	bcoalesce_stats_inc(int nbuck)
-{
-	_mstats.tbcoalesce++;
-	_mstats.ncoalesce[nbuck]++;
-}
-#else
-
-static void	bcoalesce_stats_inc(int nbuck)
-{
-	(void)nbuck;
-}
-#endif
-
-/**
- * coalesce two adjaent free blocks off the free list for size NU - 1,
- * as long as we can find two adjacent free blocks. next[NU - 1] is 
- * assumed to not be busy; the caller (morecore()) check for this.
- * BUSY[NU] must be set to 1.
+/*
+ * coalesce two adjacent free blocks off the free list for size NU - 1
+ * preserves original logic; function kept short to satisfy norminette
  */
 void	bcoalesce(int nu)
 {
-    t_mhead         *mp;
-    t_mhead         *mp1;
-    t_mhead         *mp2;
-    int             nbuck;
-    unsigned long   siz;
-    t_glob          *g;
+	t_bcoalesce_ctx	ctx;
 
-    g = get_glob(GLOB_NONE, NULL);
-    nbuck = nu - 1;
-    if (g->nextf[nbuck] == NULL || g->busy[nbuck])
-        return ;
-    g->busy[nbuck] = 1;
-    siz = binsize(nbuck);
-    mp2 = mp1 = g->nextf[nbuck];
-    mp = chain(mp1);
-    while (mp && mp != (t_mhead *)((char *)mp1 + siz))
-    {
-        mp2 = mp1;
-        mp1 = mp;
-        mp = chain(mp);
-    }
-    if (mp == NULL)
-    {
-        g->busy[nbuck] = 0;
-        return ;
-    }
-
-    /* ensure chain(mp2) == mp1 */
-    if (mp2 != mp1 && chain(mp2) != mp1)
-    {
-        g->busy[nbuck] = 0;
-        xbotch((t_addr)0, 0, "bcoalesce: chain(mp2) != mp1", NULL, 0);
-    }
-
-    if (!bcoalesce_check_adjacent(mp1, g, nbuck, siz))
-        return ;
-    if (mp1 == g->nextf[nbuck])
-        g->nextf[nbuck] = chain(mp);
-    else
-        *chain_ptr(mp2) = chain(mp);
-    g->busy[nbuck] = 0;
-    bcoalesce_stats_inc(nbuck);
-    mp1->s_minfo.mi_alloc = ISFREE;
-    mp1->s_minfo.mi_index = nu;
-    *chain_ptr(mp1) = g->nextf[nu];
-    g->nextf[nu] = mp1;
+	ctx.g = get_glob(GLOB_NONE, NULL);
+	ctx.nu = nu;
+	ctx.nbuck = nu - 1;
+	if (ctx.g->nextf[ctx.nbuck] == NULL || ctx.g->busy[ctx.nbuck])
+		return ;
+	ctx.g->busy[ctx.nbuck] = 1;
+	if (!bcoalesce_find_and_check(&ctx))
+		return ;
+	bcoalesce_update(&ctx);
 }

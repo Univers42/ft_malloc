@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:10:09 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 15:05:21 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/24 16:22:48 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -284,6 +284,16 @@ typedef enum e_glob_field
 	GLOB_ERRN
 } t_glob_field;
 
+typedef struct s_bcoalesce_ctx
+{
+	t_glob *g;
+	t_mhead *mp1;
+	t_mhead *mp2;
+	t_mhead *mp;
+	int nbuck;
+	int nu;
+} t_bcoalesce_ctx;
+
 t_addr malloc(size_t size);
 t_addr realloc(t_addr mem, size_t nbytes);
 void free(t_addr mem);
@@ -303,8 +313,7 @@ void register_malloc(t_addr mem, int e,
 					 const char *s, const char *file, int line);
 void botch(const char *s, const char *file,
 		   int line);
-void xbotch(t_addr mem, int e, const char *s,
-			const char *file, int line);
+void xbotch(int e, const char *s, const char *file, int line);
 void bcoalesce(int nu);
 
 /**
@@ -316,16 +325,25 @@ void bcoalesce(int nu);
 
 #ifdef MALLOC_REGISTER
 
-void register_malloc_impl(t_addr mem, int e, const char *s, int line);
+void register_malloc_impl(int e, const char *s, int line);
 #else
 
-void register_malloc_impl(t_addr mem, int e, const char *s,
+void register_malloc_impl(int e, const char *s,
 						  const char *file, int line);
 #endif
 
 void botch(const char *s, const char *file, int line);
-void xbotch(t_addr mem, int e, const char *s, const char *file, int line);
+void xbotch(int e, const char *s, const char *file, int line);
+
+/*
+ * Split a block at index > NU (but less than SPLIT_MAX) into a set of
+ * blocks of the correct size, and attach them to nextf[NU].  nextf[NU]
+ * is assumed to be empty.  Must be called with signals blocked (e.g.,
+ * by morecore()).  BUSY[NU] must be set to 1.
+ */
 void bsplit(int nu);
+
+
 void xsplit(t_mhead *mp, int nu);
 bool in_bucket(size_t nb, int nu);
 bool right_bucket(size_t nb, int nu);
@@ -374,5 +392,11 @@ t_zone *get_zone_with_space(t_zone **zone_list, size_t block_size, size_t zone_s
 void *allocate_from_zone(t_zone *zone);
 void free_to_zone(t_zone *zone, t_mhead *block);
 t_zone *find_zone_for_ptr(t_zone *zone_list, void *ptr);
+void	set_state_mem(t_addr mem);
+t_addr	get_state_mem(void);
+
+void	bsplit_stats_inc(int nbuck);
+void	morecore_stat_nmorecore(int nu, t_glob *g);
+void	morecore_stat_nsbrk(long s, t_glob *g);
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 11:51:34 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/25 12:13:42 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/25 14:34:43 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,5 +65,24 @@ int should_trace_or_register_or_watch(void);
 void set_state_mem(t_addr mem);
 t_addr get_state_mem(void);
 void ensure_init(void);
+
+/* Parameters for mremap_implement: wrap many args into one pointer to satisfy
+ * style constraints (single argument) and make refactoring easier.
+ */
+typedef struct s_mremap_params
+{
+    t_addr mem;
+    size_t n;
+    int newunits;
+    uint32_t tocopy;
+    int flags;
+    const char *file;
+    int line;
+    t_glob *g;
+    int nunits;
+} t_mremap_params;
+
+/* New prototype: single-argument entry point */
+t_addr mremap_implement(t_mremap_params *params);
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:10:09 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/25 11:46:15 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/25 14:45:31 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,7 +59,7 @@ typedef void *t_addr;
 memalign, with the rest of the word
 being the distance to the true
 beginning of the block.  */
-#define ISMEMALILGN 0Xd6
+#define ISMEMALILGN 0xD6
 #define MAGIC8_NUMBYTES 8
 #define MALLOC_SIZE_T u_bits32_t
 #define MALIGN_MASK 15
@@ -343,7 +343,6 @@ void xbotch(int e, const char *s, const char *file, int line);
  */
 void bsplit(int nu);
 
-
 void xsplit(t_mhead *mp, int nu);
 bool in_bucket(size_t nb, int nu);
 bool right_bucket(size_t nb, int nu);
@@ -392,12 +391,12 @@ t_zone *get_zone_with_space(t_zone **zone_list, size_t block_size, size_t zone_s
 void *allocate_from_zone(t_zone *zone);
 void free_to_zone(t_zone *zone, t_mhead *block);
 t_zone *find_zone_for_ptr(t_zone *zone_list, void *ptr);
-void	set_state_mem(t_addr mem);
-t_addr	get_state_mem(void);
+void set_state_mem(t_addr mem);
+t_addr get_state_mem(void);
 
-void	bsplit_stats_inc(int nbuck);
-void	morecore_stat_nmorecore(int nu, t_glob *g);
-void	morecore_stat_nsbrk(long s, t_glob *g);
-void	ensure_init(void);
+void bsplit_stats_inc(int nbuck);
+void morecore_stat_nmorecore(int nu, t_glob *g);
+void morecore_stat_nsbrk(long s, t_glob *g);
+void ensure_init(void);
 
 #endif

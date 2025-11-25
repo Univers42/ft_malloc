@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/21 00:55:37 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/25 13:30:36 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/25 14:49:46 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ t_state refill(t_file *scan, int fd)
 {
 	ssize_t readn;
 
-	readn = read(fd, scan, BUFFER_SIZE);
+	readn = read(fd, scan->buf, BUFFER_SIZE);
 	if (readn <= 0)
 		return ((int)readn);
 	scan->cur = scan->buf;
@@ -146,6 +146,7 @@ int main(int argc, char **argv)
 	while ((line = get_next_line(fd)) != NULL)
 	{
 		printf("%s", line);
+		GNL_FREE(line);
 	}
 	if (argv && argv[1])
 		close(fd);

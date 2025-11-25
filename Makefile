@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    by dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
+#    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2025/11/01 20:00:47 by dlesieur          #+#    #+#              #
-#    Updated: 2025/11/02 14:30:00 by dlesieur         ###   ########.fr        #
+#    Created: 2025/11/25 14:48:54 by dlesieur          #+#    #+#              #
+#    Updated: 2025/11/25 14:48:59 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -85,7 +85,7 @@ DEBUG_SRCS = $(DEBUG_DIR)/stats.c \
                 $(DEBUG_DIR)/trace.c \
                 $(DEBUG_DIR)/watch.c
 
-UTILS_SRCS = $(UTILS_DIR)/powerof2.c \
+UTILS_SRCS = $(UTILS_DIR)/utils.c \
             $(UTILS_DIR)/ft_mremap.c \
             $(UTILS_DIR)/ft_memalign.c \
             $(UTILS_DIR)/mremap_internal.c

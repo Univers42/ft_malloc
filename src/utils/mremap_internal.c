@@ -6,60 +6,30 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 13:54:12 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/25 13:56:34 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/25 14:26:39 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "alloc.h"
+#include <unistd.h>
+#include <sys/mman.h>
+#include <string.h>
+#include <stdint.h>
 
-/* round up to pages */
-static size_t	pages_round_up(size_t bytes)
-{
-	size_t	p;
+void	*alloc_new_mapping(size_t new_pages);
+size_t	pages_round_up(size_t bytes);
 
-	p = (size_t)getpagesize();
-	return (bytes + p - 1) & ~(p - 1);
-}
-
-#ifdef MREMAP_AVAILABLE
-
-void	*ft_mremap_impl(void *oldptr, size_t oldlen, size_t newlen)
+/* allocate a new mapping and copy up to 'tocopy' bytes, freeing old mapping */
+void	*alloc_and_copy_fallback(void *oldptr, size_t old_pages,
+						size_t new_pages, size_t tocopy)
 {
 	void	*newptr;
-	size_t	old_pages;
-	size_t	new_pages;
-	void	*addr;
-	size_t	tocopy;
 
-	old_pages = pages_round_up(oldlen);
-	new_pages = pages_round_up(newlen);
-	if (oldptr == NULL)
-	{
-		newptr = mmap(NULL, new_pages, PROT_READ | PROT_WRITE,
-					MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-		return ((newptr == MAP_FAILED) ? MAP_FAILED : newptr);
-	}
-	newptr = mremap(oldptr, old_pages, new_pages, MREMAP_MAYMOVE);
-	if (newptr != MAP_FAILED)
-		return (newptr);
-	if (new_pages == old_pages)
-		return (oldptr);
-	if (new_pages < old_pages)
-	{
-		addr = (void *)((char *)oldptr + new_pages);
-		if (munmap(addr, old_pages - new_pages) != 0)
-			return (MAP_FAILED);
-		return (oldptr);
-	}
-	newptr = mmap(NULL, new_pages, PROT_READ | PROT_WRITE,
-				MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	newptr = alloc_new_mapping(new_pages);
 	if (newptr == MAP_FAILED)
 		return (MAP_FAILED);
-	{
-		tocopy = oldlen < newlen ? oldlen : newlen;
-		if (tocopy)
-			memcpy(newptr, oldptr, tocopy);
-	}
+	if (tocopy)
+		memcpy(newptr, oldptr, tocopy);
 	if (munmap(oldptr, old_pages) != 0)
 	{
 		munmap(newptr, new_pages);
@@ -68,43 +38,79 @@ void	*ft_mremap_impl(void *oldptr, size_t oldlen, size_t newlen)
 	return (newptr);
 }
 
-#else
+/* unmap the tail when shrinking in-place */
+int	shrink_unmap_tail(void *oldptr, size_t old_pages, size_t new_pages)
+{
+	void	*addr;
 
+	addr = (void *)((char *)oldptr + new_pages);
+	if (munmap(addr, old_pages - new_pages) != 0)
+		return (0);
+	return (1);
+}
+
+#ifdef MREMAP_AVAILABLE
+
+/* try kernel mremap (may move) */
+void	*try_kernel_mremap(void *oldptr, size_t old_pages, size_t new_pages)
+{
+	void	*ret;
+
+	ret = mremap(oldptr, old_pages, new_pages, MREMAP_MAYMOVE);
+	return (ret);
+}
+
+/* prefer kernel mremap; fall back to safe allocate-copy-free behavior */
 void	*ft_mremap_impl(void *oldptr, size_t oldlen, size_t newlen)
 {
-	void			*newptr;
-	void			*addr;
 	size_t			tocopy;
 	const size_t	old_pages = pages_round_up(oldlen);
 	const size_t	new_pages = pages_round_up(newlen);
 
 	if (oldptr == NULL)
-	{
-		newptr = mmap(NULL, new_pages, PROT_READ | PROT_WRITE,
-					MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-		return (newptr == MAP_FAILED) ? MAP_FAILED : newptr;
-	}
+		return (alloc_new_mapping(new_pagese));
+	newptr = try_kernel_mremap(oldptr, old_pages, new_pages);
+	if (newptr != MAP_FAILED)
+		return (newptr);
 	if (new_pages == old_pages)
 		return (oldptr);
 	if (new_pages < old_pages)
 	{
-		addr = (void *)((char *)oldptr + new_pages);
-		if (munmap(addr, old_pages - new_pages) != 0)
+		if (!shrink_unmap_tail(oldptr, old_pages, new_pages))
 			return (MAP_FAILED);
 		return (oldptr);
 	}
-	newptr = mmap(NULL, new_pages, PROT_READ | PROT_WRITE,
-				MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	if (newptr == MAP_FAILED)
-		return (MAP_FAILED);
+	if (oldlen < newlen)
+		tocopy = oldlen;
+	else
+		tocopy = newlen;
+	return (alloc_and_copy_fallback(oldptr, old_pages, new_pages, tocopy));
+}
+
+#else
+
+/* portable fallback: no kernel mremap used */
+void	*ft_mremap_impl(void *oldptr, size_t oldlen, size_t newlen)
+{
+	const size_t	old_pages = pages_round_up(oldlen);
+	const size_t	new_pages = pages_round_up(newlen);
+	size_t			tocopy;
+
+	if (oldptr == NULL)
+		return (alloc_new_mapping(new_pages));
+	if (new_pages == old_pages)
+		return (oldptr);
+	if (new_pages < old_pages)
 	{
-		tocopy = oldlen < newlen ? oldlen : newlen;
-		if (tocopy)
-			memcpy(newptr, oldptr, tocopy);
+		if (!shrink_unmap_tail(oldptr, old_pages, new_pages))
+			return (MAP_FAILED);
+		return (oldptr);
 	}
-	if (munmap(oldptr, old_pages) != 0)
-		return (munmap(newptr, new_pages), MAP_FAILED);
-	return (newptr);
+	if (oldlen < newlen)
+		tocopy = oldlen;
+	else
+		tocopy = newlen;
+	return (alloc_and_copy_fallback(oldptr, old_pages, new_pages, tocopy));
 }
 
 #endif

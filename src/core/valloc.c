@@ -1,20 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   malloc.c                                           :+:      :+:    :+:   */
+/*   valloc.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/31 18:56:10 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/25 12:00:05 by dlesieur         ###   ########.fr       */
+/*   Created: 2025/11/25 11:44:26 by dlesieur          #+#    #+#             */
+/*   Updated: 2025/11/25 12:03:10 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "alloc.h"
 
+#ifndef NO_VALLOC
 
-t_addr ft_malloc(size_t size)
+t_addr ft_valloc(size_t size)
 {
 	ensure_init();
-	return (internal_malloc(size, (char *)NULL, 0, 0));
+	return (internal_valloc(size, (char *)NULL, 0, 0));
 }
+#endif

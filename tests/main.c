@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/01 13:50:55 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 15:12:40 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/25 13:00:49 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -226,6 +226,7 @@ static void test_realloc_patterns(void)
 	printf("Freed successfully\n");
 }
 
+__attribute__((weak))
 int main(void)
 {
 	printf("╔═══════════════════════════════════════╗\n");

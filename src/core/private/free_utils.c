@@ -6,11 +6,11 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/24 22:02:33 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/24 22:24:39 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/25 11:53:04 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "alloc.h"
+#include "private.h"
 
 void	validate_end_guard(char *ap, t_mhead *p, t_addr mem, const char *file, int line)
 {

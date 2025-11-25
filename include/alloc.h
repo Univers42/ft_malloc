@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 17:10:09 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/24 16:22:48 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/25 11:46:15 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -398,5 +398,6 @@ t_addr	get_state_mem(void);
 void	bsplit_stats_inc(int nbuck);
 void	morecore_stat_nmorecore(int nu, t_glob *g);
 void	morecore_stat_nsbrk(long s, t_glob *g);
+void	ensure_init(void);
 
 #endif

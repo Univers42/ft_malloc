@@ -12,8 +12,8 @@
 
 NAME = libft_malloc.so
 BINDIR = bin
-TESTSRC = tests/main/main.c
-TESTBIN = $(BINDIR)/alloc
+TESTSRC = tests/get_next_line.c
+TESTBIN = $(BINDIR)/gnl
 
 CC = gcc
 CFLAGS = -Wall -Wextra -Werror -fPIC -O2
@@ -24,6 +24,7 @@ LDFLAGS = -shared
 SRC_DIR = src
 OBJ_DIR = obj
 CORE_DIR = $(SRC_DIR)/core
+PRIVATE_DIR = $(CORE_DIR)/private
 HELPERS_DIR = $(SRC_DIR)/helpers
 DEBUG_DIR = $(SRC_DIR)/debug
 UTILS_DIR = $(SRC_DIR)/utils
@@ -32,9 +33,18 @@ UTILS_DIR = $(SRC_DIR)/utils
 CORE_SRCS = $(CORE_DIR)/malloc.c \
             $(CORE_DIR)/free.c \
             $(CORE_DIR)/realloc.c \
-            $(CORE_DIR)/internals.c \
-            $(CORE_DIR)/suite_alloc.c \
-            $(CORE_DIR)/ft_mremap.c
+            $(CORE_DIR)/valloc.c\
+            $(CORE_DIR)/calloc.c \
+            $(PRIVATE_DIR)/free_utils.c\
+            $(PRIVATE_DIR)/free_utils2.c\
+            $(PRIVATE_DIR)/malloc_helpers.c\
+            $(PRIVATE_DIR)/malloc_triggers.c\
+            $(PRIVATE_DIR)/internal_calloc.c\
+            $(PRIVATE_DIR)/internal_free.c\
+            $(PRIVATE_DIR)/internal_malloc.c\
+            $(PRIVATE_DIR)/internal_realloc.c\
+            $(PRIVATE_DIR)/internal_valloc.c\
+            $(PRIVATE_DIR)/internals.c
 
 HELPERS_SRCS = $(HELPERS_DIR)/accessors.c \
                 $(HELPERS_DIR)/bcoalesce.c \
@@ -53,6 +63,8 @@ HELPERS_SRCS = $(HELPERS_DIR)/accessors.c \
                 $(HELPERS_DIR)/bsplit_helpers.c \
                 $(HELPERS_DIR)/dyn_core_helper.c \
                 $(HELPERS_DIR)/fastcopy.c \
+                $(HELPERS_DIR)/use_mmap.c \
+                $(HELPERS_DIR)/use_less_core.c \
                 $(HELPERS_DIR)/zero.c \
                 $(HELPERS_DIR)/bzero.c \
                 $(HELPERS_DIR)/memset.c \
@@ -73,7 +85,9 @@ DEBUG_SRCS = $(DEBUG_DIR)/stats.c \
                 $(DEBUG_DIR)/trace.c \
                 $(DEBUG_DIR)/watch.c
 
-UTILS_SRCS = $(UTILS_DIR)/powerof2.c
+UTILS_SRCS = $(UTILS_DIR)/powerof2.c \
+            $(UTILS_DIR)/ft_mremap.c \
+            $(UTILS_DIR)/ft_memalign.c
 
 SRCS = $(CORE_SRCS) $(HELPERS_SRCS) $(DEBUG_SRCS) $(UTILS_SRCS)
 
@@ -91,7 +105,12 @@ ifdef HYBRID
 	CFLAGS += -DUSE_HYBRID_MODE
 endif
 
-all: $(BINDIR)/$(NAME) $(TESTBIN)
+# Test mode program
+MODE_TEST_SRC = tests/mode_test.c
+MODE_FT_BIN = $(BINDIR)/mode_ft
+MODE_LIBC_BIN = $(BINDIR)/mode_libc
+
+all: $(BINDIR)/$(NAME) $(TESTBIN) $(MODE_FT_BIN) $(MODE_LIBC_BIN)
 
 $(BINDIR)/$(NAME): $(OBJS)
 	@mkdir -p $(BINDIR)
@@ -107,7 +126,21 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 $(TESTBIN): $(TESTSRC) $(BINDIR)/$(NAME)
 	@mkdir -p $(BINDIR)
 	@echo "$(GREEN)Compiling test $(TESTSRC) -> $(TESTBIN)...$(RESET)"
-	@$(CC) $(CFLAGS) -I./include -o $(TESTBIN) $(TESTSRC) -L$(BINDIR) -lft_malloc -Wl,-rpath,'$$ORIGIN'
+	@if [ "$(MODE_MALLOC)" = "1" ]; then \
+		$(CC) $(CFLAGS) -DMODE_MALLOC=1 -I./include -o $(TESTBIN) $(TESTSRC); \
+	else \
+		$(CC) $(CFLAGS) -I./include -o $(TESTBIN) $(TESTSRC) -L$(BINDIR) -lft_malloc -Wl,-rpath,'$$ORIGIN'; \
+	fi
+
+$(MODE_FT_BIN): $(MODE_TEST_SRC) $(BINDIR)/$(NAME)
+	@mkdir -p $(BINDIR)
+	@echo "$(GREEN)Compiling mode test (ft) $(MODE_TEST_SRC) -> $(MODE_FT_BIN)...$(RESET)"
+	@$(CC) $(CFLAGS) -I./include -o $(MODE_FT_BIN) $(MODE_TEST_SRC) -L$(BINDIR) -lft_malloc -Wl,-rpath,'$$ORIGIN'
+
+$(MODE_LIBC_BIN): $(MODE_TEST_SRC)
+	@mkdir -p $(BINDIR)
+	@echo "$(GREEN)Compiling mode test (libc) $(MODE_TEST_SRC) -> $(MODE_LIBC_BIN)...$(RESET)"
+	@$(CC) $(CFLAGS) -DMODE_MALLOC=1 -I./include -o $(MODE_LIBC_BIN) $(MODE_TEST_SRC)
 
 clean:
 	@echo "$(RED)Cleaning object files...$(RESET)"

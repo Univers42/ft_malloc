@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/24 21:50:43 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/24 22:04:22 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/25 12:13:43 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,8 @@ static void handle_lesscore_internal(int nunits, t_glob *g)
 	errno = o;
 }
 
-static int try_lesscore_free(t_mhead *p, int nunits, t_glob *g)
+/* make this exported (non-static) */
+int try_lesscore_free(t_mhead *p, int nunits, t_glob *g)
 {
 	int freed;
 
@@ -56,7 +57,7 @@ static int try_lesscore_free(t_mhead *p, int nunits, t_glob *g)
 	return (freed);
 }
 #else
-static int try_lesscore_free(t_mhead *p, int nunits, t_glob *g)
+int try_lesscore_free(t_mhead *p, int nunits, t_glob *g)
 {
 	(void)p;
 	(void)nunits;

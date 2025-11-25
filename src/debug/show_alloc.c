@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/02 14:50:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/24 21:27:09 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/25 13:14:58 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,11 +23,14 @@ void	track_allocation(void *ptr, size_t size)
 	int				i;
 	t_alloc_entry	*tbl;
 	int				*countp;
+	const char		*logenv = NULL;
 
 	tbl = alloc_table();
 	countp = alloc_count_ptr();
 	if (!ptr)
 		return ;
+	// optional logging
+	logenv = getenv("FTMALLOC_LOG");
 	i = 0;
 	while (i < MAX_TRACKED_ALLOCS)
 	{
@@ -38,10 +41,14 @@ void	track_allocation(void *ptr, size_t size)
 			tbl[i].active = 1;
 			if (i >= *countp)
 				*countp = i + 1;
+			if (logenv)
+				fprintf(stderr, "TRACK + %p : %zu\n", ptr, size);
 			return ;
 		}
 		i++;
 	}
+	if (logenv)
+		fprintf(stderr, "TRACK FAILED (table full) + %p : %zu\n", ptr, size);
 }
 
 void	untrack_allocation(void *ptr)
@@ -49,21 +56,27 @@ void	untrack_allocation(void *ptr)
 	int				i;
 	t_alloc_entry	*tbl;
 	int				*countp;
+	const char		*logenv = NULL;
 
 	tbl = alloc_table();
 	countp = alloc_count_ptr();
 	if (!ptr)
 		return ;
+	logenv = getenv("FTMALLOC_LOG");
 	i = 0;
 	while (i < *countp)
 	{
 		if (tbl[i].active && tbl[i].ptr == ptr)
 		{
 			tbl[i].active = 0;
+			if (logenv)
+				fprintf(stderr, "UNTRACK - %p\n", ptr);
 			return ;
 		}
 		i++;
 	}
+	if (logenv)
+		fprintf(stderr, "UNTRACK MISS - %p\n", ptr);
 }
 
 static size_t	show_category(const char *category, size_t min, size_t max)

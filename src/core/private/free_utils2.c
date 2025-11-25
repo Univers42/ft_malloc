@@ -6,11 +6,11 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/24 22:03:11 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/24 22:24:18 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/25 11:53:10 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "alloc.h"
+#include "private.h"
 
 void	trace_and_watch_setup(t_mhead *p, uint32_t *ubytes)
 {

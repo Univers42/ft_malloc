@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/02 14:50:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/25 13:14:58 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/25 14:59:48 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,16 +23,14 @@ void	track_allocation(void *ptr, size_t size)
 	int				i;
 	t_alloc_entry	*tbl;
 	int				*countp;
-	const char		*logenv = NULL;
+	const char		*logenv = getenv("FTMALLOC_LOG");
 
 	tbl = alloc_table();
 	countp = alloc_count_ptr();
 	if (!ptr)
 		return ;
-	// optional logging
-	logenv = getenv("FTMALLOC_LOG");
-	i = 0;
-	while (i < MAX_TRACKED_ALLOCS)
+	i = -1;
+	while (++i < MAX_TRACKED_ALLOCS)
 	{
 		if (tbl[i].active == 0)
 		{
@@ -45,7 +43,6 @@ void	track_allocation(void *ptr, size_t size)
 				fprintf(stderr, "TRACK + %p : %zu\n", ptr, size);
 			return ;
 		}
-		i++;
 	}
 	if (logenv)
 		fprintf(stderr, "TRACK FAILED (table full) + %p : %zu\n", ptr, size);

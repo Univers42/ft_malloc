@@ -87,7 +87,8 @@ DEBUG_SRCS = $(DEBUG_DIR)/stats.c \
 
 UTILS_SRCS = $(UTILS_DIR)/powerof2.c \
             $(UTILS_DIR)/ft_mremap.c \
-            $(UTILS_DIR)/ft_memalign.c
+            $(UTILS_DIR)/ft_memalign.c \
+            $(UTILS_DIR)/mremap_internal.c
 
 SRCS = $(CORE_SRCS) $(HELPERS_SRCS) $(DEBUG_SRCS) $(UTILS_SRCS)
 

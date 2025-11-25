@@ -6,21 +6,22 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/24 22:04:46 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/25 12:13:43 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/25 13:43:12 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "alloc.h"
 
 #ifdef USE_MMAP
-static int should_use_munmap(int nunits, int threshold)
+
+int	should_use_munmap(int nunits, int threshold)
 {
 	return (nunits > threshold);
 }
 
-static void handle_munmap(t_mhead *p, int nunits, t_glob *g)
+void	handle_munmap(t_mhead *p, int nunits, t_glob *g)
 {
-	int o;
+	int	o;
 
 	o = errno;
 	munmap(p, binsize(nunits));
@@ -29,9 +30,9 @@ static void handle_munmap(t_mhead *p, int nunits, t_glob *g)
 }
 
 /* make this exported (non-static) so other TUs can call it */
-int try_munmap_free(t_mhead *p, int nunits, t_glob *g)
+int	try_munmap_free(t_mhead *p, int nunits, t_glob *g)
 {
-	int freed;
+	int	freed;
 
 	freed = 0;
 	if (should_use_munmap(nunits, MMAP_THRESHOLD))
@@ -42,7 +43,8 @@ int try_munmap_free(t_mhead *p, int nunits, t_glob *g)
 	return (freed);
 }
 #else
-int try_munmap_free(t_mhead *p, int nunits, t_glob *g)
+
+int	try_munmap_free(t_mhead *p, int nunits, t_glob *g)
 {
 	(void)p;
 	(void)nunits;

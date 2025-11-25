@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   realloc.c                                          :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/11/25 13:37:56 by dlesieur          #+#    #+#             */
+/*   Updated: 2025/11/25 13:38:36 by dlesieur         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "alloc.h"
 
 /*
@@ -10,9 +22,8 @@
  */
 
 /* public wrapper: forward to the real implementation in the private TU */
-t_addr
-ft_realloc(t_addr mem, size_t nbytes)
+t_addr	ft_realloc(t_addr mem, size_t nbytes)
 {
-    ensure_init();
-    return (internal_realloc(mem, nbytes, (char *)NULL, 0, 0));
+	ensure_init();
+	return (internal_realloc(mem, nbytes, (char *) NULL, 0, 0));
 }

@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 11:45:25 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/25 12:03:16 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/25 13:46:05 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,16 +14,15 @@
 
 void	ensure_init(void)
 {
-	t_glob *g;
+	t_glob	*g;
 
 	g = get_glob(GLOB_NONE, NULL);
 	if (g->pagesz == 0)
 		init_allocator_glob();
 }
 
-t_addr ft_memalign(size_t align, size_t size)
+t_addr	ft_memalign(size_t align, size_t size)
 {
 	ensure_init();
-	return (internal_memalign(align, size, (char *)NULL, 0, 0));
+	return (internal_memalign(align, size, (char *) NULL, 0, 0));
 }
-

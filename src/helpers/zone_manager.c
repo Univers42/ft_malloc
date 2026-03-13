@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/24 20:20:03 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/24 20:33:18 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 00:30:11 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,17 @@ void	init_zone_struct(t_zone *zone, void *mem,
 			size_t zone_size, size_t block_size);
 void	build_zone_free_list(t_zone *zone,
 			size_t block_size, size_t num_blocks);
+
+void	*zone_allocate_memory(size_t zone_size)
+{
+	void	*mem;
+
+	mem = mmap(NULL, zone_size, PROT_READ | PROT_WRITE,
+			MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (mem == MAP_FAILED)
+		return (NULL);
+	return (mem);
+}
 
 /* Create a new zone for given block size */
 t_zone	*create_zone(size_t block_size, size_t zone_size)

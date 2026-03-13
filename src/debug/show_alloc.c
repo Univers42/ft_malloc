@@ -18,34 +18,30 @@ t_alloc_entry	*alloc_table(void);
 int				*alloc_count_ptr(void);
 void			print_entry(void *ptr, size_t size);
 
-void	track_allocation(void *ptr, size_t size)
+static void	track_slot(t_alloc_entry *e, int *cp, void *ptr, size_t sz)
 {
-	int				i;
-	t_alloc_entry	*tbl;
-	int				*countp;
-	const char		*logenv = getenv("FTMALLOC_LOG");
+	int	i;
 
-	tbl = alloc_table();
-	countp = alloc_count_ptr();
-	if (!ptr)
-		return ;
 	i = -1;
 	while (++i < MAX_TRACKED_ALLOCS)
 	{
-		if (tbl[i].active == 0)
+		if (e[i].active == 0)
 		{
-			tbl[i].ptr = ptr;
-			tbl[i].size = size;
-			tbl[i].active = 1;
-			if (i >= *countp)
-				*countp = i + 1;
-			if (logenv)
-				fprintf(stderr, "TRACK + %p : %zu\n", ptr, size);
+			e[i].ptr = ptr;
+			e[i].size = sz;
+			e[i].active = 1;
+			if (i >= *cp)
+				*cp = i + 1;
 			return ;
 		}
 	}
-	if (logenv)
-		fprintf(stderr, "TRACK FAILED (table full) + %p : %zu\n", ptr, size);
+}
+
+void	track_allocation(void *ptr, size_t size)
+{
+	if (!ptr)
+		return ;
+	track_slot(alloc_table(), alloc_count_ptr(), ptr, size);
 }
 
 void	untrack_allocation(void *ptr)
@@ -53,81 +49,56 @@ void	untrack_allocation(void *ptr)
 	int				i;
 	t_alloc_entry	*tbl;
 	int				*countp;
-	const char		*logenv = NULL;
 
-	tbl = alloc_table();
-	countp = alloc_count_ptr();
 	if (!ptr)
 		return ;
-	logenv = getenv("FTMALLOC_LOG");
+	tbl = alloc_table();
+	countp = alloc_count_ptr();
 	i = 0;
 	while (i < *countp)
 	{
 		if (tbl[i].active && tbl[i].ptr == ptr)
 		{
 			tbl[i].active = 0;
-			if (logenv)
-				fprintf(stderr, "UNTRACK - %p\n", ptr);
 			return ;
 		}
 		i++;
 	}
-	if (logenv)
-		fprintf(stderr, "UNTRACK MISS - %p\n", ptr);
 }
 
-static size_t	show_category(const char *category, size_t min, size_t max)
+static void	show_matching(t_alloc_entry *e, int cnt, size_t mn, size_t mx)
+{
+	int	i;
+
+	i = -1;
+	while (++i < cnt)
+	{
+		if (e[i].active && e[i].size > mn && e[i].size <= mx)
+			print_entry(e[i].ptr, e[i].size);
+	}
+}
+
+size_t	show_category(const char *cat, size_t min, size_t max)
 {
 	size_t			total;
-	int				printed;
 	int				i;
 	t_alloc_entry	*tbl;
-	int				*countp;
+	int				cnt;
 
 	tbl = alloc_table();
-	countp = alloc_count_ptr();
+	cnt = *alloc_count_ptr();
 	total = 0;
-	printed = 0;
 	i = -1;
-	while (++i < *countp)
+	while (++i < cnt)
 	{
-		if (tbl[i].active && tbl[i].size > min && tbl[i].size <= max)
-		{
-			if (!printed)
-			{
-				printf("%s : %p\n", category, tbl[i].ptr);
-				printed = 1;
-			}
-			print_entry(tbl[i].ptr, tbl[i].size);
+		if (tbl[i].active && tbl[i].size > min
+			&& tbl[i].size <= max)
 			total += tbl[i].size;
-		}
+	}
+	if (total > 0)
+	{
+		printf("%s : %p\n", cat, tbl[0].ptr);
+		show_matching(tbl, cnt, min, max);
 	}
 	return (total);
-}
-
-void	show_alloc_mem(void)
-{
-	const size_t	total_tiny = show_category("TINY", 0, TINY_MAX);
-	const size_t	total_small = show_category("SMALL", TINY_MAX, SMALL_MAX);
-	const size_t	total_large = show_category("LARGE", SMALL_MAX, (size_t)-1);
-	const size_t	grand_total = total_tiny + total_small + total_large;
-
-	printf("Total : %zu bytes\n", grand_total);
-}
-
-static void		leak_report_on_exit(void) __attribute__((destructor));
-
-static void	leak_report_on_exit(void)
-{
-	const size_t	total_tiny = show_category("TINY", 0, TINY_MAX);
-	const size_t	total_small = show_category("SMALL", TINY_MAX, SMALL_MAX);
-	const size_t	total_large = show_category("LARGE", SMALL_MAX, (size_t)-1);
-	const size_t	grand_total = total_tiny + total_small + total_large;
-
-	if (grand_total > 0)
-	{
-		fprintf(stderr, "\n⚠️  MEMORY LEAK DETECTED! ⚠️\n");
-		fprintf(stderr, "Total leaked: %zu bytes\n", grand_total);
-		show_alloc_mem();
-	}
 }

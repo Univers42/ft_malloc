@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 13:54:12 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/25 14:26:39 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 00:30:11 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,7 +43,7 @@ int	shrink_unmap_tail(void *oldptr, size_t old_pages, size_t new_pages)
 {
 	void	*addr;
 
-	addr = (void *)((char *)oldptr + new_pages);
+	addr = (void *)((char *) oldptr + new_pages);
 	if (munmap(addr, old_pages - new_pages) != 0)
 		return (0);
 	return (1);
@@ -63,12 +63,15 @@ void	*try_kernel_mremap(void *oldptr, size_t old_pages, size_t new_pages)
 /* prefer kernel mremap; fall back to safe allocate-copy-free behavior */
 void	*ft_mremap_impl(void *oldptr, size_t oldlen, size_t newlen)
 {
-	size_t			tocopy;
-	const size_t	old_pages = pages_round_up(oldlen);
-	const size_t	new_pages = pages_round_up(newlen);
+	size_t	tocopy;
+	size_t	old_pages;
+	size_t	new_pages;
+	void	*newptr;
 
+	old_pages = pages_round_up(oldlen);
+	new_pages = pages_round_up(newlen);
 	if (oldptr == NULL)
-		return (alloc_new_mapping(new_pagese));
+		return (alloc_new_mapping(new_pages));
 	newptr = try_kernel_mremap(oldptr, old_pages, new_pages);
 	if (newptr != MAP_FAILED)
 		return (newptr);
@@ -92,10 +95,12 @@ void	*ft_mremap_impl(void *oldptr, size_t oldlen, size_t newlen)
 /* portable fallback: no kernel mremap used */
 void	*ft_mremap_impl(void *oldptr, size_t oldlen, size_t newlen)
 {
-	const size_t	old_pages = pages_round_up(oldlen);
-	const size_t	new_pages = pages_round_up(newlen);
-	size_t			tocopy;
+	size_t	old_pages;
+	size_t	new_pages;
+	size_t	tocopy;
 
+	old_pages = pages_round_up(oldlen);
+	new_pages = pages_round_up(newlen);
 	if (oldptr == NULL)
 		return (alloc_new_mapping(new_pages));
 	if (new_pages == old_pages)

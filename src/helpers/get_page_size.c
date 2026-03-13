@@ -1,19 +1,23 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   imalloc.h                                          :+:      :+:    :+:   */
+/*   get_page_size.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/24 22:13:52 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/03/13 21:24:49 by dlesieur         ###   ########.fr       */
+/*   Created: 2025/11/25 14:05:00 by dlesieur          #+#    #+#             */
+/*   Updated: 2025/11/25 14:05:00 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef IMALLOC_H
-# define IMALLOC_H
+#include "get_page_size.h"
 
-# include "alloc_types.h"
-# include "alloc_funcs.h"
+int	get_page_size(void)
+{
+	long	result;
 
-#endif
+	result = sysconf(_SC_PAGESIZE);
+	if (result > 0)
+		return ((int)result);
+	return (4096);
+}

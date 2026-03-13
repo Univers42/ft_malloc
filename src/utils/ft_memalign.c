@@ -6,11 +6,12 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 11:45:25 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/25 13:46:05 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 00:30:11 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "alloc.h"
+#include "../core/private/private.h"
 
 void	ensure_init(void)
 {
@@ -23,6 +24,11 @@ void	ensure_init(void)
 
 t_addr	ft_memalign(size_t align, size_t size)
 {
+	t_val_ctx	v;
+
 	ensure_init();
-	return (internal_memalign(align, size, (char *) NULL, 0, 0));
+	v.mem = (t_addr) NULL;
+	v.file = NULL;
+	v.line = 0;
+	return (internal_memalign(align, size, &v, 0));
 }

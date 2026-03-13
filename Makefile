@@ -6,7 +6,7 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/25 14:48:54 by dlesieur          #+#    #+#              #
-#    Updated: 2025/11/25 14:48:59 by dlesieur         ###   ########.fr        #
+#    Updated: 2026/03/14 00:30:11 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -39,6 +39,7 @@ CORE_SRCS = $(CORE_DIR)/malloc.c \
             $(PRIVATE_DIR)/free_utils2.c\
             $(PRIVATE_DIR)/malloc_helpers.c\
             $(PRIVATE_DIR)/malloc_triggers.c\
+            $(PRIVATE_DIR)/malloc_triggers2.c\
             $(PRIVATE_DIR)/internal_calloc.c\
             $(PRIVATE_DIR)/internal_free.c\
             $(PRIVATE_DIR)/internal_malloc.c\
@@ -71,16 +72,24 @@ HELPERS_SRCS = $(HELPERS_DIR)/accessors.c \
                 $(HELPERS_DIR)/zone_manager_helps.c \
                 $(HELPERS_DIR)/pagealign_helpers.c \
                 $(HELPERS_DIR)/malloc_block_signals.c\
-                $(HELPERS_DIR)/malloc_unblock_signals.c
+                $(HELPERS_DIR)/malloc_unblock_signals.c\
+                $(HELPERS_DIR)/get_page_size.c\
+                $(HELPERS_DIR)/malloc_register.c\
+                $(HELPERS_DIR)/malloc_trace.c\
+                $(HELPERS_DIR)/malloc_stats.c\
+                $(HELPERS_DIR)/malloc_watch.c\
+                $(HELPERS_DIR)/memscramble.c\
+                $(HELPERS_DIR)/use_more_core.c\
+                $(HELPERS_DIR)/zone_manager.c
 
 DEBUG_SRCS = $(DEBUG_DIR)/stats.c \
                 $(DEBUG_DIR)/helper.c \
                 $(DEBUG_DIR)/show_alloc.c \
+                $(DEBUG_DIR)/show_alloc2.c \
                 $(DEBUG_DIR)/stat_utils.c \
                 $(DEBUG_DIR)/stat_utils2.c \
                 $(DEBUG_DIR)/stat_utils3.c \
                 $(DEBUG_DIR)/stat_utils4.c \
-                $(DEBUG_DIR)/stats.c \
                 $(DEBUG_DIR)/table.c \
                 $(DEBUG_DIR)/trace.c \
                 $(DEBUG_DIR)/watch.c
@@ -111,7 +120,11 @@ MODE_TEST_SRC = tests/mode_test.c
 MODE_FT_BIN = $(BINDIR)/mode_ft
 MODE_LIBC_BIN = $(BINDIR)/mode_libc
 
-all: $(BINDIR)/$(NAME) $(TESTBIN) $(MODE_FT_BIN) $(MODE_LIBC_BIN)
+# Comprehensive test
+COMP_TEST_SRC = tests/test_comprehensive.c
+COMP_TEST_BIN = $(BINDIR)/alloc_test
+
+all: $(BINDIR)/$(NAME) $(TESTBIN) $(MODE_FT_BIN) $(MODE_LIBC_BIN) $(COMP_TEST_BIN)
 
 $(BINDIR)/$(NAME): $(OBJS)
 	@mkdir -p $(BINDIR)
@@ -142,6 +155,11 @@ $(MODE_LIBC_BIN): $(MODE_TEST_SRC)
 	@mkdir -p $(BINDIR)
 	@echo "$(GREEN)Compiling mode test (libc) $(MODE_TEST_SRC) -> $(MODE_LIBC_BIN)...$(RESET)"
 	@$(CC) $(CFLAGS) -DMODE_MALLOC=1 -I./include -o $(MODE_LIBC_BIN) $(MODE_TEST_SRC)
+
+$(COMP_TEST_BIN): $(COMP_TEST_SRC) $(BINDIR)/$(NAME)
+	@mkdir -p $(BINDIR)
+	@echo "$(GREEN)Compiling comprehensive test -> $(COMP_TEST_BIN)...$(RESET)"
+	@$(CC) $(CFLAGS) -I./include -o $(COMP_TEST_BIN) $(COMP_TEST_SRC) -L$(BINDIR) -lft_malloc -Wl,-rpath,'$$ORIGIN'
 
 clean:
 	@echo "$(RED)Cleaning object files...$(RESET)"

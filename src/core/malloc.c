@@ -6,11 +6,12 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 18:56:10 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/25 13:37:52 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/13 23:47:34 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "alloc.h"
+#include "private/private.h"
 
 t_addr	ft_malloc(size_t size)
 {

@@ -12,9 +12,9 @@
 
 #include "private.h"
 
-t_mhead *get_block_from_freelist(int nunits, t_glob *g)
+t_mhead	*get_block_from_freelist(int nunits, t_glob *g)
 {
-	t_mhead *p;
+	t_mhead	*p;
 
 	if (g->nextf[nunits] == 0)
 		morecore(nunits);
@@ -29,28 +29,31 @@ t_mhead *get_block_from_freelist(int nunits, t_glob *g)
 	return (p);
 }
 
-void validate_free_block(t_mhead *p, int nunits, const char *file, int line)
+void	validate_free_block(t_mhead *p, int nu, t_val_ctx *v)
 {
-	if (p->s_minfo.mi_alloc != ISFREE || p->s_minfo.mi_index != nunits)
+	if (p->s_minfo.mi_alloc != ISFREE
+		|| p->s_minfo.mi_index != nu)
 	{
 		set_state_mem((t_addr)(p + 1));
-		xbotch(ERR_ASSERT_FAILED, "malloc: block on free list clobbered", file, line);
+		xbotch(ERR_ASSERT_FAILED,
+			"malloc: free list clobbered", v->file, v->line);
 	}
 }
 
-void setup_block_header(t_mhead *p, size_t n)
+void	setup_block_header(t_mhead *p, size_t n)
 {
 	p->s_minfo.mi_alloc = ISALLOC;
 	p->s_minfo.mi_magic2 = MAGIC2;
 	p->s_minfo.mi_nbytes = n;
-	malloc_memset((char *)p->s_minfo.mi_magic8, MAGIC1, MAGIC8_NUMBYTES);
+	malloc_memset((char *)p->s_minfo.mi_magic8,
+		MAGIC1, MAGIC8_NUMBYTES);
 }
 
-void setup_end_guard(t_mhead *p, size_t n)
+void	setup_end_guard(t_mhead *p, size_t n)
 {
-	t_mguard mg;
-	uint8_t *z;
-	char *m;
+	t_mguard	mg;
+	uint8_t		*z;
+	char		*m;
 
 	mg.i = n;
 	z = (uint8_t *)mg.s;

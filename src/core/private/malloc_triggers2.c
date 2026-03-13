@@ -1,42 +1,35 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   malloc_triggers.c                                  :+:      :+:    :+:   */
+/*   malloc_triggers2.c                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 11:57:37 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/25 11:57:37 by dlesieur         ###   ########.fr       */
+/*   Created: 2025/11/25 12:30:00 by dlesieur          #+#    #+#             */
+/*   Updated: 2025/11/25 12:30:00 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "private.h"
 
-void	scramble_allocated_memory(void *mem, size_t n)
-{
-	if (n)
-		malloc_memset((char *)mem, 0xdf, n);
-}
-
-void	update_recurse_stats(t_glob *g, int nunits)
-{
-	(void)g;
-	(void)nunits;
-}
-
-void	update_alloc_stats(t_glob *g, int nunits, size_t n)
-{
-	(void)g;
-	(void)nunits;
-	(void)n;
-}
-
-void	handle_malloc_trace_alloc(t_alloc_ctx *ctx)
+void	handle_malloc_watch_alloc(t_alloc_ctx *ctx)
 {
 	(void)ctx;
 }
 
-void	handle_malloc_register_alloc(t_alloc_ctx *ctx)
+void	check_alignment(t_alloc_ctx *ctx)
 {
 	(void)ctx;
+}
+
+int	check_max_alloc_size(size_t n)
+{
+	if (allocated_bytes(n) > MAXALLOC_SIZE)
+		return (0);
+	return (1);
+}
+
+int	should_trace_or_register_or_watch(void)
+{
+	return (1);
 }

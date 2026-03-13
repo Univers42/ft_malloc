@@ -6,15 +6,15 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/01 20:05:42 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/25 14:29:26 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 00:30:11 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "alloc.h"
+#include <unistd.h>
+#include <sys/mman.h>
 
-/**
- * could also use (((x) & -(x)) == x);
- */
+/* could also use (((x) & -(x)) == x) */
 int	is_powerof2(int x)
 {
 	return (((x - 1) & x) == 0);
@@ -25,7 +25,7 @@ size_t	pages_round_up(size_t bytes)
 {
 	size_t	p;
 
-	p = (size_t)getpagesize();
+	p = (size_t) getpagesize();
 	return ((bytes + p - 1) & ~(p - 1));
 }
 

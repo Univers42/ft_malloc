@@ -12,68 +12,55 @@
 
 #include "private.h"
 
-/* Context used by the small helpers so we keep helper signatures short */
-
-/* simple finalize helper (keeps behaviour minimal; triggers untracking).
- * More advanced stats/trace/register/watch logic can be added where
- * the corresponding cross-file APIs are exported. */
-static void finalize_free(t_addr mem, uint32_t ubytes, int nunits,
-						  const char *file, int line, int flags, t_glob *g)
-{
-	(void)ubytes;
-	(void)nunits;
-	(void)file;
-	(void)line;
-	(void)flags;
-	(void)g;
-	untrack_allocation(mem);
-}
-
-/* validate and populate the context (returns 0 on success) */
-void ifree_prepare(t_ifree_ctx *c, const char *file, int line)
+void	ifree_prepare(t_ifree_ctx *c, t_val_ctx *v)
 {
 	c->g = get_glob(GLOB_NONE, NULL);
 	c->ap = (char *)c->mem;
 	c->p = (t_mhead *)c->ap - 1;
 	handle_memalign(&c->mem, &c->ap, &c->p);
 	trace_and_watch_setup(c->p, &c->ubytes);
-	validate_alloc_status(c->mem, c->p, file, line);
+	validate_alloc_status(c->mem, c->p, v);
 	c->nunits = c->p->s_minfo.mi_index;
 	c->nbytes = allocated_bytes(c->p->s_minfo.mi_nbytes);
 	if (in_bucket(c->nbytes, c->nunits) == 0)
 	{
 		set_state_mem(c->mem);
-		xbotch(ERR_UNDERFLOW, "free: underflow detected; mh_nbytes out of range", file, line);
+		xbotch(ERR_UNDERFLOW,
+			"free: underflow detected", v->file, v->line);
 	}
-	validate_magic8(c->p, c->mem, file, line);
-	validate_end_guard(c->ap, c->p, c->mem, file, line);
+	validate_magic8(c->p, v);
+	validate_end_guard(c->ap, c->p, v);
 }
 
-/* perform free path: special cases (munmap/lesscore) or add to free list */
-void ifree_handle_free(t_ifree_ctx *c)
+void	ifree_handle_free(t_ifree_ctx *c)
 {
 	c->freed = handle_special_free_cases(c->p, c->nunits, c->g);
 	if (!c->freed)
 	{
-		/* use exported trigger that is visible across TUs */
-		scramble_allocated_memory(c->mem, c->p->s_minfo.mi_nbytes);
-		assert_or_abort(c->nunits < NBUCKETS, "nunits < NBUCKETS", NULL, 0);
+		scramble_allocated_memory(c->mem,
+			c->p->s_minfo.mi_nbytes);
+		assert_or_abort(c->nunits < NBUCKETS,
+			"nunits < NBUCKETS", NULL, 0);
 		handle_busy_bucket(c->p, c->nunits, c->g);
 		if (c->g->busy[c->nunits] != 1)
 			add_to_free_list(c->p, c->nunits, c->g);
 	}
 }
 
-/* public API: thin wrapper that delegates to small helpers */
-t_addr internal_free(t_addr mem, const char *file, int line, int flags)
+t_addr	internal_free(t_addr mem, const char *file, int line, int flags)
 {
-	t_ifree_ctx ctx;
+	t_ifree_ctx	ctx;
+	t_val_ctx	v;
 
+	(void)flags;
 	if (mem == 0)
 		return (NULL);
+	v.mem = mem;
+	v.file = file;
+	v.line = line;
 	ctx.mem = mem;
-	ifree_prepare(&ctx, file, line);
+	ifree_prepare(&ctx, &v);
 	ifree_handle_free(&ctx);
-	finalize_free(ctx.mem, ctx.ubytes, ctx.nunits, file, line, flags, ctx.g);
+	untrack_allocation(mem);
 	return (NULL);
 }

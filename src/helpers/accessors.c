@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/01 21:00:44 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/24 14:37:44 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 00:30:11 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,4 +59,9 @@ t_glob	*get_glob(t_glob_field field, void *value)
 	if (field != GLOB_NONE && value != NULL)
 		set_glob_field(&glob, field, value);
 	return (&glob);
+}
+
+int	mover_head(void)
+{
+	return (sizeof(t_mhead));
 }

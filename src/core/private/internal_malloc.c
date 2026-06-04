@@ -12,31 +12,35 @@
 
 #include "private.h"
 
+/*
+ * O(1) size class. binsizes are exactly 2^(5+k) (32, 64, ... 2^31), so the
+ * smallest bucket k with binsize(k) >= nbytes is ceil(log2(nbytes)) - 5,
+ * computed with a count-leading-zeros. Returns >= NBUCKETS for over-large sizes
+ * (do_malloc rejects those). Matches the old binsize loop for every size.
+ */
 int	calculate_nunits(uint32_t nbytes, t_glob *g)
 {
-	int			nunits;
-	uint32_t	half_page;
+	int	k;
 
-	half_page = (uint32_t)(g->pagesz >> 1);
-	if (nbytes <= half_page)
-		nunits = STARTBUCK;
-	else
-		nunits = g->pagebucket;
-	while (nunits < NBUCKETS)
-	{
-		if (nbytes <= binsize(nunits))
-			break ;
-		nunits++;
-	}
-	return (nunits);
+	(void)g;
+	if (nbytes <= 32)
+		return (STARTBUCK);
+	k = 64 - __builtin_clzll((unsigned long long)(nbytes - 1)) - 5;
+	if (k < 0)
+		k = 0;
+	if (k > NBUCKETS)
+		k = NBUCKETS;
+	return (k);
 }
 
+/*
+ * busy[] was the original BSD reentrancy guard (a signal handler allocating
+ * mid-malloc). Signals are not intercepted in this build, so there is no
+ * reentrancy: busy[] stays 0 and the guard is pure overhead. We drop the per-op
+ * busy writes; the remaining reads elsewhere simply see 0 (unchanged behaviour).
+ */
 int	handle_reentrant(int nunits, t_glob *g)
 {
-	update_recurse_stats(g, nunits);
-	while (g->busy[nunits])
-		nunits++;
-	g->busy[nunits] = 1;
 	if (nunits > g->maxbuck)
 		g->maxbuck = nunits;
 	return (nunits);
@@ -50,7 +54,7 @@ static void	finalize_alloc(t_alloc_ctx *ctx)
 	handle_malloc_register_alloc(ctx);
 	handle_malloc_watch_alloc(ctx);
 	check_alignment(ctx);
-	track_allocation(ctx->ptr, ctx->n);
+	track_allocation_dbg(ctx->ptr, ctx->n, ctx->file, ctx->line);
 }
 
 static t_addr	do_malloc(t_glob *g, size_t n, t_val_ctx *v, int flags)
@@ -68,7 +72,8 @@ static t_addr	do_malloc(t_glob *g, size_t n, t_val_ctx *v, int flags)
 	p = get_block_from_freelist(nunits, g);
 	if (p == NULL)
 		return (NULL);
-	validate_free_block(p, nunits, v);
+	if (FT_HARDEN)
+		validate_free_block(p, nunits, v);
 	setup_block_header(p, n);
 	setup_end_guard(p, n);
 	ctx = (t_alloc_ctx){(t_addr)(p + 1), p, n, nunits,

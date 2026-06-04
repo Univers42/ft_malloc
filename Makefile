@@ -6,7 +6,7 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/25 14:48:54 by dlesieur          #+#    #+#              #
-#    Updated: 2026/03/14 00:30:11 by dlesieur         ###   ########.fr        #
+#    Updated: 2026/06/05 00:32:28 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -16,9 +16,9 @@ TESTSRC = tests/get_next_line.c
 TESTBIN = $(BINDIR)/gnl
 
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -fPIC -O2
+CFLAGS = -Wall -Wextra -Werror -fPIC -O3 -flto
 INCLUDES = -I./include
-LDFLAGS = -shared
+LDFLAGS = -shared -flto -O3
 
 # Directories
 SRC_DIR = src
@@ -35,6 +35,8 @@ CORE_SRCS = $(CORE_DIR)/malloc.c \
             $(CORE_DIR)/realloc.c \
             $(CORE_DIR)/valloc.c\
             $(CORE_DIR)/calloc.c \
+            $(CORE_DIR)/dbg_api.c \
+            $(CORE_DIR)/dbg_api2.c \
             $(PRIVATE_DIR)/free_utils.c\
             $(PRIVATE_DIR)/free_utils2.c\
             $(PRIVATE_DIR)/malloc_helpers.c\
@@ -86,6 +88,10 @@ DEBUG_SRCS = $(DEBUG_DIR)/stats.c \
                 $(DEBUG_DIR)/helper.c \
                 $(DEBUG_DIR)/show_alloc.c \
                 $(DEBUG_DIR)/show_alloc2.c \
+                $(DEBUG_DIR)/track.c \
+                $(DEBUG_DIR)/track_tbl.c \
+                $(DEBUG_DIR)/leakcheck.c \
+                $(DEBUG_DIR)/leakcheck_dtor.c \
                 $(DEBUG_DIR)/stat_utils.c \
                 $(DEBUG_DIR)/stat_utils2.c \
                 $(DEBUG_DIR)/stat_utils3.c \
@@ -124,6 +130,27 @@ MODE_LIBC_BIN = $(BINDIR)/mode_libc
 COMP_TEST_SRC = tests/test_comprehensive.c
 COMP_TEST_BIN = $(BINDIR)/alloc_test
 
+# ---- Leak-audit harness (debug build; NOT part of the subject deliverable) ----
+DBG_NAME    = libft_malloc_dbg.so
+DBG_OBJ_DIR = obj_dbg
+DBG_OBJS    = $(SRCS:$(SRC_DIR)/%.c=$(DBG_OBJ_DIR)/%.o)
+DBG_CFLAGS  = -Wall -Wextra -Werror -fPIC -g -DFT_MALLOC_DEBUG
+LEAK_DIR    = tests/leakcheck
+LEAK_SRC    = $(LEAK_DIR)/full_audit.c
+LEAK_BIN    = $(BINDIR)/full_audit
+ASAN_BIN    = $(BINDIR)/full_audit_asan
+SYSCOUNT    = $(BINDIR)/libsyscount.so
+LEAK_CFLAGS = -Wall -Wextra -g -DFT_MALLOC_DEBUG
+
+# ---- Benchmark (ft_* vs libc) ----------------------------------------------
+BENCH_DIR     = tests/bench
+BENCH_SRC     = $(BENCH_DIR)/bench.c
+BENCH_BIN     = $(BINDIR)/bench
+BENCH_FULL    = $(BINDIR)/bench_shipped
+# pure-allocator build: swap the O(n) debug tracker for a no-op stub
+BENCH_CORESRC = $(filter-out $(DEBUG_DIR)/track.c,$(SRCS)) $(BENCH_DIR)/notrack_stub.c
+BENCH_CFLAGS  = -O3 -flto -Wall -Wextra
+
 all: $(BINDIR)/$(NAME) $(TESTBIN) $(MODE_FT_BIN) $(MODE_LIBC_BIN) $(COMP_TEST_BIN)
 
 $(BINDIR)/$(NAME): $(OBJS)
@@ -161,15 +188,75 @@ $(COMP_TEST_BIN): $(COMP_TEST_SRC) $(BINDIR)/$(NAME)
 	@echo "$(GREEN)Compiling comprehensive test -> $(COMP_TEST_BIN)...$(RESET)"
 	@$(CC) $(CFLAGS) -I./include -o $(COMP_TEST_BIN) $(COMP_TEST_SRC) -L$(BINDIR) -lft_malloc -Wl,-rpath,'$$ORIGIN'
 
+# ---- Leak-audit lanes ------------------------------------------------------
+$(DBG_OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(dir $@)
+	@$(CC) $(DBG_CFLAGS) $(INCLUDES) -c $< -o $@
+
+$(BINDIR)/$(DBG_NAME): $(DBG_OBJS)
+	@mkdir -p $(BINDIR)
+	@$(CC) $(LDFLAGS) -o $@ $^
+	@echo "$(GREEN)✓ $@ (debug lib) created$(RESET)"
+
+$(SYSCOUNT): $(LEAK_DIR)/preload_syscalls.c
+	@mkdir -p $(BINDIR)
+	@$(CC) -Wall -Wextra -fPIC -g $(LDFLAGS) -o $@ $< -ldl
+	@echo "$(GREEN)✓ $@ (syscall interposer) created$(RESET)"
+
+$(LEAK_BIN): $(LEAK_SRC) $(BINDIR)/$(DBG_NAME)
+	@mkdir -p $(BINDIR)
+	@$(CC) $(LEAK_CFLAGS) $(INCLUDES) -o $@ $(LEAK_SRC) \
+		-L$(BINDIR) -lft_malloc_dbg -Wl,-rpath,'$$ORIGIN'
+	@echo "$(GREEN)✓ $@ (leak harness) created$(RESET)"
+
+$(ASAN_BIN): $(SRCS) $(LEAK_SRC)
+	@mkdir -p $(BINDIR)
+	@$(CC) $(LEAK_CFLAGS) -fsanitize=address,undefined $(INCLUDES) \
+		-o $@ $(SRCS) $(LEAK_SRC)
+	@echo "$(GREEN)✓ $@ (ASan/UBSan harness) created$(RESET)"
+
+debug: $(BINDIR)/$(DBG_NAME)
+
+leakcheck: $(LEAK_BIN) $(SYSCOUNT)
+	@$(LEAK_DIR)/run.sh lane12
+
+leakcheck-asan: $(ASAN_BIN)
+	@$(LEAK_DIR)/run.sh asan
+
+leakcheck-valgrind: $(LEAK_BIN)
+	@$(LEAK_DIR)/run.sh valgrind
+
+leakcheck-all: $(LEAK_BIN) $(SYSCOUNT) $(ASAN_BIN)
+	@$(LEAK_DIR)/run.sh all
+
+$(BENCH_BIN): $(BENCH_SRC) $(BENCH_CORESRC) $(BENCH_DIR)/bench_scn.h
+	@mkdir -p $(BINDIR)
+	@$(CC) $(BENCH_CFLAGS) $(INCLUDES) -o $@ $(BENCH_SRC) $(BENCH_CORESRC) -lm
+	@echo "$(GREEN)✓ $@ (pure allocator vs libc) created$(RESET)"
+
+$(BENCH_FULL): $(BENCH_SRC) $(SRCS) $(BENCH_DIR)/bench_scn.h
+	@mkdir -p $(BINDIR)
+	@$(CC) $(BENCH_CFLAGS) $(INCLUDES) -o $@ $(BENCH_SRC) $(SRCS) -lm
+	@echo "$(GREEN)✓ $@ (shipped lib incl. tracker vs libc) created$(RESET)"
+
+bench: $(BENCH_BIN)
+	@$(BENCH_BIN)
+
+bench-shipped: $(BENCH_FULL)
+	@$(BENCH_FULL)
+
 clean:
 	@echo "$(RED)Cleaning object files...$(RESET)"
-	@rm -rf $(OBJ_DIR)
+	@rm -rf $(OBJ_DIR) $(DBG_OBJ_DIR)
 
 fclean: clean
 	@echo "$(RED)Removing $(BINDIR)/$(NAME) and $(TESTBIN)...$(RESET)"
 	@rm -f $(BINDIR)/$(NAME) $(TESTBIN)
+	@rm -f $(BINDIR)/$(DBG_NAME) $(LEAK_BIN) $(ASAN_BIN) $(SYSCOUNT)
+	@rm -f $(BENCH_BIN) $(BENCH_FULL)
 
 re: fclean all
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re debug leakcheck leakcheck-asan \
+	leakcheck-valgrind leakcheck-all bench bench-shipped
 

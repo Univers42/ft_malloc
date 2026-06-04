@@ -14,7 +14,7 @@
 
 void	scramble_allocated_memory(void *mem, size_t n)
 {
-	if (n)
+	if (FT_HARDEN && n)
 		malloc_memset((char *)mem, 0xdf, n);
 }
 

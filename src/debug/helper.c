@@ -36,6 +36,13 @@ int	*alloc_count_ptr(void)
 	return (&count);
 }
 
+unsigned long	*alloc_overflow_ptr(void)
+{
+	static unsigned long	overflow = 0;
+
+	return (&overflow);
+}
+
 void	print_entry(void *ptr, size_t size)
 {
 	void	*start;

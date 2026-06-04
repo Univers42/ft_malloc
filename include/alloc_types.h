@@ -87,6 +87,7 @@ typedef struct s_glob
 	t_zone		*tiny_zones;
 	t_zone		*small_zones;
 	void		*large_list;
+	size_t		large_cached_bytes;
 }	t_glob;
 
 typedef struct s_binspec

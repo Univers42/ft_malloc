@@ -48,7 +48,9 @@
 # endif
 
 /* Debug features -----------------------------------------------------------*/
-# define MEMSCRAMBLE
+/* The 0xdf scramble of every alloc/free is hardening; it is gated in code by
+ * `if (FT_HARDEN)` (see scramble_allocated_memory), so it runs only in the
+ * FT_MALLOC_DEBUG build and never on the default fast path. */
 
 /* End ----------------------------------------------------------------------*/
 #endif

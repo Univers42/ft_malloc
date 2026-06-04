@@ -37,11 +37,13 @@ static t_addr	realloc_edge(t_addr mem, size_t n, t_val_ctx *v)
 			MALLOC_INTERNAL));
 }
 
-/* same bucket: update size in place and rewrite end guard */
-static t_addr	realloc_in_place(t_addr mem, t_mhead *p, size_t n)
+/* same bucket: update size in place, rewrite end guard, resync tracker */
+static t_addr	realloc_in_place(t_addr mem, t_mhead *p, size_t n, t_val_ctx *v)
 {
 	p->s_minfo.mi_nbytes = (uint32_t) n;
 	setup_end_guard(p, n);
+	untrack_allocation(mem);
+	track_allocation_dbg(mem, n, v->file, v->line);
 	return (mem);
 }
 
@@ -84,6 +86,6 @@ t_addr	internal_realloc(t_addr mem, size_t n, t_val_ctx *v, int flags)
 	nbytes = allocated_bytes(n);
 	if (right_bucket(nbytes, nunits)
 		|| (nunits >= 1 && right_bucket(nbytes, nunits - 1)))
-		return (realloc_in_place(mem, p, n));
+		return (realloc_in_place(mem, p, n, v));
 	return (realloc_copy(mem, n, v, p->s_minfo.mi_nbytes));
 }

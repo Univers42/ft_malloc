@@ -51,10 +51,8 @@ int	handle_special_free_cases(t_mhead *p, int nunits, t_glob *g)
 void	add_to_free_list(t_mhead *p, int nunits, t_glob *g)
 {
 	p->s_minfo.mi_alloc = ISFREE;
-	g->busy[nunits] = 1;
 	*chain_ptr(p) = g->nextf[nunits];
 	g->nextf[nunits] = p;
-	g->busy[nunits] = 0;
 }
 
 void	handle_busy_bucket(t_mhead *p, int nunits, t_glob *g)

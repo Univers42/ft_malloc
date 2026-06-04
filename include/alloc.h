@@ -13,6 +13,20 @@
 #ifndef ALLOC_H
 # define ALLOC_H
 
+/*
+ * Build profile gate. The default build is the fast, glibc-like path. The
+ * FT_MALLOC_DEBUG (audit) build turns on FT_HARDEN, which re-enables the per-op
+ * safety work: the 0xdf scramble, the 8-byte magic canary, and the end-guard
+ * (written on alloc, validated on free). The cheap mi_alloc double-free check is
+ * always on, in both profiles. FT_HARDEN is a 0/1 constant so the hot path gates
+ * it with `if (FT_HARDEN)` and the optimizer drops the dead branch (zero cost).
+ */
+# ifdef FT_MALLOC_DEBUG
+#  define FT_HARDEN 1
+# else
+#  define FT_HARDEN 0
+# endif
+
 # include <stdbool.h>
 # include <sys/types.h>
 # include <signal.h>
@@ -70,6 +84,13 @@
 # define USE_MREMAP 0
 
 # define MMAP_THRESHOLD 12
+
+/* Retain up to this many bytes of freed large (mmap-backed) blocks on their
+ * freelists for reuse instead of munmap-ing every large free. Beyond the cap,
+ * large frees are returned to the OS so memory stays bounded. */
+# ifndef LARGE_CACHE_CAP
+#  define LARGE_CACHE_CAP 67108864UL
+# endif
 
 # ifdef USE_HYBRID_MODE
 #  define USE_SBRK_FOR_TINY_SMALL 1

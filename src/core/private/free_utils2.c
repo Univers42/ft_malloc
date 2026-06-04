@@ -20,11 +20,11 @@ void	trace_and_watch_setup(t_mhead *p, uint32_t *ubytes)
 
 void	handle_memalign(t_addr *mem, char **ap, t_mhead **p)
 {
-	(void)mem;
 	if ((*p)->s_minfo.mi_alloc == ISMEMALILGN)
 	{
 		*ap -= (*p)->s_minfo.mi_nbytes;
 		*p = (t_mhead *)*ap - 1;
+		*mem = (t_addr)(*p + 1);
 	}
 }
 
@@ -40,8 +40,9 @@ void	validate_alloc_status(t_addr mem, t_mhead *p, t_val_ctx *v)
 			xbotch(ERR_UNALLOC,
 				"free: unallocated block", v->file, v->line);
 	}
-	assert_or_abort(p->s_minfo.mi_magic2 == MAGIC2,
-		"mi_magic2 == MAGIC2", v->file, v->line);
+	if (FT_HARDEN)
+		assert_or_abort(p->s_minfo.mi_magic2 == MAGIC2,
+			"mi_magic2 == MAGIC2", v->file, v->line);
 }
 
 void	validate_magic8(t_mhead *p, t_val_ctx *v)

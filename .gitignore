@@ -53,3 +53,8 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Build outputs (compiled binaries + object dirs) — rebuilt by `make`
+bin/
+obj/
+obj_dbg/

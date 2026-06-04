@@ -21,15 +21,18 @@ void	ifree_prepare(t_ifree_ctx *c, t_val_ctx *v)
 	trace_and_watch_setup(c->p, &c->ubytes);
 	validate_alloc_status(c->mem, c->p, v);
 	c->nunits = c->p->s_minfo.mi_index;
-	c->nbytes = allocated_bytes(c->p->s_minfo.mi_nbytes);
-	if (in_bucket(c->nbytes, c->nunits) == 0)
+	if (FT_HARDEN)
 	{
-		set_state_mem(c->mem);
-		xbotch(ERR_UNDERFLOW,
-			"free: underflow detected", v->file, v->line);
+		c->nbytes = allocated_bytes(c->p->s_minfo.mi_nbytes);
+		if (in_bucket(c->nbytes, c->nunits) == 0)
+		{
+			set_state_mem(c->mem);
+			xbotch(ERR_UNDERFLOW,
+				"free: underflow detected", v->file, v->line);
+		}
+		validate_magic8(c->p, v);
+		validate_end_guard(c->ap, c->p, v);
 	}
-	validate_magic8(c->p, v);
-	validate_end_guard(c->ap, c->p, v);
 }
 
 void	ifree_handle_free(t_ifree_ctx *c)
@@ -61,6 +64,6 @@ t_addr	internal_free(t_addr mem, const char *file, int line, int flags)
 	ctx.mem = mem;
 	ifree_prepare(&ctx, &v);
 	ifree_handle_free(&ctx);
-	untrack_allocation(mem);
+	untrack_allocation(ctx.mem);
 	return (NULL);
 }

@@ -19,13 +19,22 @@
 
 # define TINY_MAX 128
 # define SMALL_MAX 1024
-# define MAX_TRACKED_ALLOCS 10000
+/* The allocation tracker (powers show_alloc_mem + the audit oracles) is an
+ * open-addressing hash table keyed on the user pointer, with backward-shift
+ * deletion so churn never accumulates tombstones. Capacity is a power of two;
+ * TRACK_SHIFT = 64 - log2(capacity) for the multiplicative hash. */
+# define MAX_TRACKED_ALLOCS 16384
+# define TRACK_MASK 16383
+# define TRACK_SHIFT 50
 
 typedef struct s_alloc_entry
 {
-	void	*ptr;
-	size_t	size;
-	int		active;
+	void			*ptr;
+	size_t			size;
+	int				active;
+	const char		*file;
+	int				line;
+	unsigned long	serial;
 }	t_alloc_entry;
 
 #endif

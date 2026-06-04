@@ -63,7 +63,15 @@ void		malloc_unblock_signals(sigset_t *setp, sigset_t *osetp);
 
 void		show_alloc_mem(void);
 void		track_allocation(void *ptr, size_t size);
+void		track_allocation_dbg(void *ptr, size_t size,
+				const char *file, int line);
 void		untrack_allocation(void *ptr);
+
+size_t		malloc_live_bytes(void);
+size_t		malloc_live_count(void);
+size_t		malloc_track_overflow(void);
+void		malloc_leak_map(void);
+void		leak_report_on_exit(void);
 
 t_zone		*create_zone(size_t block_size, size_t zone_size);
 t_zone		*get_zone_with_space(t_zone **zl, size_t bs, size_t zs);

@@ -105,23 +105,22 @@ dead-code-eliminates the gated branches, so `if (FT_HARDEN)` is zero-cost in the
    allocating mid-malloc; signals aren't intercepted here, so it was 4 stores per
    malloc/free pair of pure overhead. Removing it took the geomean from ~1.49× to ~1.85×.
 
-## The shipped (tracker-on) tradeoff
+## The shipped build
 
-`make bench-shipped` keeps the allocation tracker that powers `show_alloc_mem` (a 42-subject
-requirement). It now uses the O(1) hash table, so it is no longer catastrophic — geomean
-≈ 1.23× — but the ~2 ns/op of tracking makes the very smallest single-block churn lose to
-glibc while the large/batch/mixed wins keep it ahead overall. The `make bench` figure (tracker
-stubbed out) is the allocator's true speed.
+`make bench-shipped` builds the library exactly as shipped. The per-op `show_alloc_mem` tracker
+is now **debug-build-only** (the default build answers `show_alloc_mem` by walking the arena
+registry), so `bench-shipped` ≈ `bench` — no per-op tracking tax.
 
-## Deferred
+## `realloc` and `mremap` — measured and rejected
 
-- **`realloc 8->128KB` (the one loss).** ft copies on grow; glibc uses `mremap`. Reviving
-  `mremap(2)` for large reallocs needs the block to be a standalone mmap region, and `mremap`
-  on an sbrk-backed block corrupts the heap — and 128 KB sits right at the mmap threshold. Not
-  worth the corruption risk for a single 1.08× scenario; left documented.
-- **calloc zero-skip on fresh mmap.** Would help only large (mmap-backed) callocs; the bench's
-  calloc sizes are sbrk-backed (must be zeroed), so near-zero benefit for the added freshness
-  tracking.
+`realloc 8->128KB` is ~1.02× (parity with glibc; the central lock narrowed the old 1.08× gap).
+ft reallocs a growing block by `internal_malloc` + `fastcopy` + `internal_free`. I implemented
+the obvious "use `mremap(2)` for the large standalone-mmap blocks" optimization and **measured
+it 58× slower** (8010 ns vs 136 ns): for ≤ 1 MB the `mremap` syscall plus the kernel page move
+costs far more than a `memcpy`, and a growing mapping almost always has to move. `mremap` only
+pays off for multi-MB blocks. So the copy path is the right choice here and is at parity —
+reverted. (calloc zero-skip on fresh mmap is similarly low-value: the bench's calloc sizes are
+served from recycled blocks that must be zeroed.)
 
 ## Caveats
 

@@ -122,34 +122,57 @@ pays off for multi-MB blocks. So the copy path is the right choice here and is a
 reverted. (calloc zero-skip on fresh mmap is similarly low-value: the bench's calloc sizes are
 served from recycled blocks that must be zeroed.)
 
-## Real-program benchmarks (`make bench-gnl`, `make bench-gnl-mt`, `make philo-ft`)
+## Real-program benchmarks (`make bench-pool`, `make bench-gnl[-mt]`, `make philo-ft`)
 
 The synthetic suite above is a *pure-allocator* microbenchmark. These run the allocator
-through actual programs:
+through actual programs / realistic workloads:
 
-- **get_next_line** (`tests/get_next_line.c`, real source) — malloc/realloc-heavy: every line
-  is built in a buffer grown by repeated realloc. `bench-gnl` runs the real get_next_line over
-  a 16 MB file (no printf in the hot loop). `bench-gnl-mt` runs the same line-reading pattern
-  in 1..16 threads (a static-free reader, since get_next_line's per-fd statics aren't safe once
-  threads recycle fds).
-- **dining philosophers** (`tests/philosopher`, submodule) — a real pthreads program;
-  `make philo-ft` runs it entirely on ft_malloc via the `LD_PRELOAD` shim `tests/interpose.c`
-  (ft_malloc is not an interposer, so the shim maps libc `malloc`/`free`/`realloc`/`calloc`
-  to `ft_*`). `make philo-helgrind` runs it under Helgrind.
+### `make bench-pool` — concurrent server pool (the headline MT win)
 
-**Results.** get_next_line single-thread: ft ≈ **0.88×** glibc (10.6 vs 12.1 Mlines/s);
-multithreaded: **near parity** (within ~5–9% across 1–16 threads, ft ahead at some counts,
-run-to-run noisy). philosophers: **runs correctly and Helgrind-clean** on ft_malloc.
+A Larson-style benchmark (`tests/bench/bench_pool.c`), the canonical test for multithreaded
+allocators: a fixed array of 8192 live "connection buffers" churned by a pool of worker
+threads. Each step a worker mallocs a small buffer, atomically swaps it into a random slot, and
+frees the buffer that was there — which was almost always allocated by a **different thread**.
+That cross-thread free is the real-server hard case (a request accepted on one thread, freed on
+another); it is pure malloc/free, no memcpy, so it isolates allocator throughput.
 
-**Why gnl lands near parity, not the synthetic 1.17×/1.34× win:** gnl spends roughly half its
-time in the per-line `memcpy` (allocator-independent), so any allocator edge is diluted; and
-its growing-buffer realloc favors glibc's boundary-tag design, which extends a chunk *in place*,
-whereas ft's segregated buckets must copy when a grow crosses a size class. The dedicated
-**lock-free TLS realloc fast path** (`src/helpers/tcache2.c`: `realloc(NULL)` → magazine pop,
-same/smaller class → in place, grow-within-TLS → magazine copy) was added for exactly this
-workload — it lifted gnl from a clear loss (~0.64×, when every realloc took the central lock)
-to the near-parity above. Takeaway: ft wins allocation-bound workloads; on memcpy-bound real
-code it matches glibc and stays correct + race-free.
+| threads | ft Mops/s | libc Mops/s | ft/libc |
+|--:|--:|--:|--:|
+| 1  |  ~50 |  ~44 | **~1.15×** |
+| 2  |  ~53 |  ~30 | **~1.75×** |
+| 4  |  ~76 |  ~42 | **~1.83×** |
+| 8  | ~115 |  ~68 | **~1.68×** |
+| 16 | ~177 | ~118 | **~1.50×** |
+
+ft wins **every** thread count (geomean ≈ **1.55×**). Note glibc *drops* from ~44 to ~30 Mops/s
+going 1→2 threads — its arena-lock / cross-thread-free contention — while ft scales smoothly.
+ft handles this lock-free: every block self-describes its size class in the header, so a free by
+any thread lands in *that* thread's magazine without touching the owner. The cross-thread-free
+path is Helgrind-verified (`make helgrind` / `mt_stress`).
+
+### `make bench-gnl` / `bench-gnl-mt` — get_next_line (malloc + realloc)
+
+The *real* `tests/get_next_line.c` over a 16 MB file (no printf in the hot loop); `-mt` runs the
+same per-line pattern in 1..16 threads (a static-free reader, since get_next_line's per-fd
+statics aren't safe once threads recycle fds). Result: ft ≈ **0.88×** single-thread, **near
+parity** multithreaded. gnl spends ~half its time in the per-line `memcpy` (allocator-
+independent), so any edge is diluted; and its growing-buffer realloc favors glibc's boundary-tag
+design (extends a chunk *in place*) where ft's segregated buckets must copy across a size class.
+The **lock-free TLS realloc fast path** (`src/helpers/tcache2.c`: `realloc(NULL)` → magazine pop,
+same/smaller class → in place, grow-within-TLS → magazine copy) was added for this workload — it
+lifted gnl from a clear loss (~0.64×, when every realloc took the central lock) to near parity.
+
+### `make philo-ft` / `philo-helgrind` — dining philosophers (correctness)
+
+The `tests/philosopher` submodule run entirely on ft_malloc via the `LD_PRELOAD` shim
+`tests/interpose.c` (ft is not an interposer, so the shim maps libc
+`malloc`/`free`/`realloc`/`calloc` → `ft_*`). It is allocation-light (a couple of callocs at
+init), so it is a **correctness/thread-safety** proof, not a throughput race: it runs correctly
+and **Helgrind-clean**.
+
+**Takeaway:** ft wins allocation-bound workloads decisively — the synthetic suite and, more
+convincingly, the concurrent server pool (~1.5–1.8× MT). On memcpy-bound real code (gnl) it
+matches glibc, and it is correct + race-free in a real threaded program.
 
 ## Caveats
 

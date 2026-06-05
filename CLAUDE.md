@@ -73,16 +73,21 @@ speed came from: `-O3 -flto`, a large-block free cache (`LARGE_CACHE_CAP`, no mu
 an O(1) clz size class, dropping the dead `busy[]` guard, and gating per-op safety behind
 `FT_HARDEN`.
 
-**Real-program benchmarks** (`make bench-gnl`, `make bench-gnl-mt`, `make philo-ft` /
-`philo-helgrind`; see `BENCH.md`). `bench-gnl[-mt]` run the actual `get_next_line` (malloc +
-growing realloc per line) ft vs libc; `philo-ft` runs the `tests/philosopher` submodule entirely
-on ft_malloc via the `LD_PRELOAD` shim `tests/interpose.c` (maps libc `malloc`→`ft_malloc`,
-since ft is not an interposer). Findings: get_next_line is ~half memcpy (allocator-independent),
-so ft lands at **~0.88× single-thread / near parity multithreaded** — not the synthetic win —
-and glibc's boundary-tag realloc extends in place where ft's buckets copy across size classes.
-philosophers runs **correctly and Helgrind-clean** on ft. So: ft wins allocation-bound
-workloads (the synthetic suite), matches glibc on memcpy-bound real code, and stays
-correct + race-free. **Don't claim "faster on everything"** — it's workload-dependent.
+**Real-program benchmarks** (`make bench-pool`, `make bench-gnl[-mt]`, `make philo-ft` /
+`philo-helgrind`; see `BENCH.md`). **`bench-pool`** is a Larson-style concurrent server pool
+(`tests/bench/bench_pool.c`): worker threads churn a shared array of live buffers with
+**cross-thread frees** — pure malloc/free, the workload that distinguishes MT allocators. ft
+wins every thread count, **~1.15× single-thread → ~1.5–1.8× multithreaded** (geomean ≈ 1.55×;
+glibc actually drops 1→2 threads from arena contention). This is the convincing real-program MT
+win. `bench-gnl[-mt]` run the actual `get_next_line` (malloc + growing realloc per line): ~half
+memcpy (allocator-independent), so ft lands at **~0.88× ST / near parity MT** — glibc's
+boundary-tag realloc extends in place where ft's buckets copy across size classes. `philo-ft`
+runs the `tests/philosopher` submodule entirely on ft_malloc via the `LD_PRELOAD` shim
+`tests/interpose.c` (maps libc `malloc`→`ft_malloc`, since ft is not an interposer); it is
+allocation-light, so it is a correctness proof — runs **correctly and Helgrind-clean**.
+So: ft wins allocation-bound workloads (clearly on `bench-pool`), matches glibc on memcpy-bound
+real code (gnl), and stays correct + race-free. **Don't claim "faster on everything"** — it is
+workload-dependent, but it wins the workload that matters for a concurrent allocator.
 
 **Build profiles — `FT_HARDEN` (`include/alloc.h`).** `FT_HARDEN` is a 0/1 compile-time
 constant (1 only under `FT_MALLOC_DEBUG`); the hot path gates safety with `if (FT_HARDEN)` so

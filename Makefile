@@ -320,6 +320,26 @@ bench-gnl-mt: $(GNL_MT_FT) $(GNL_MT_LIBC)
 	@echo ""
 	@$(GNL_MT_LIBC)
 
+# ---- Concurrent server-pool benchmark (Larson-style, malloc/free-bound) -----
+POOL_SRC   = tests/bench/bench_pool.c
+POOL_FT    = $(BINDIR)/bench_pool_ft
+POOL_LIBC  = $(BINDIR)/bench_pool_libc
+
+$(POOL_FT): $(POOL_SRC) $(BINDIR)/$(NAME)
+	@mkdir -p $(BINDIR)
+	@$(CC) $(GNL_CFLAGS) -pthread -o $@ $(POOL_SRC) \
+		-L$(BINDIR) -lft_malloc $(RPATH) -lm
+
+$(POOL_LIBC): $(POOL_SRC)
+	@mkdir -p $(BINDIR)
+	@$(CC) $(GNL_CFLAGS) -pthread -DMODE_MALLOC=1 -o $@ $(POOL_SRC) -lm
+
+bench-pool: $(POOL_FT) $(POOL_LIBC)
+	@echo "$(GREEN)== concurrent server-pool: cross-thread malloc/free ==$(RESET)"
+	@LD_LIBRARY_PATH=$(BINDIR) $(POOL_FT)
+	@echo ""
+	@$(POOL_LIBC)
+
 # ---- Real multithreaded program on ft_malloc: dining philosophers -----------
 PRELOAD   = $(BINDIR)/libft_preload.so
 PHILO_DIR = tests/philosopher/philo
@@ -361,6 +381,7 @@ fclean: clean
 	@rm -f $(BINDIR)/$(DBG_NAME) $(LEAK_BIN) $(ASAN_BIN) $(SYSCOUNT)
 	@rm -f $(BENCH_BIN) $(BENCH_FULL) $(BENCH_MT_BIN) $(MT_BIN)
 	@rm -f $(GNL_FT) $(GNL_LIBC) $(GNL_MT_FT) $(GNL_MT_LIBC) $(PRELOAD)
+	@rm -f $(POOL_FT) $(POOL_LIBC)
 	@rm -f $(BINDIR)/gnl_ft.o $(BINDIR)/gnl_libc.o \
 		$(BINDIR)/gnl_mt_ft.o $(BINDIR)/gnl_mt_libc.o
 
@@ -368,6 +389,6 @@ re: fclean all
 
 .PHONY: all clean fclean re debug leakcheck leakcheck-asan \
 	leakcheck-valgrind leakcheck-all bench bench-shipped bench-mt \
-	mt-stress helgrind bench-gnl bench-gnl-mt philo-build philo-ft \
-	philo-libc philo-helgrind
+	mt-stress helgrind bench-gnl bench-gnl-mt bench-pool philo-build \
+	philo-ft philo-libc philo-helgrind
 

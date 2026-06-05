@@ -340,6 +340,26 @@ bench-pool: $(POOL_FT) $(POOL_LIBC)
 	@echo ""
 	@$(POOL_LIBC)
 
+# ---- Roll-up: every benchmark, synthetic + real-program ---------------------
+bench-all:
+	@echo "$(GREEN)#### 1/5  synthetic, single-thread (pure allocator) ####$(RESET)"
+	@$(MAKE) -s bench
+	@echo ""
+	@echo "$(GREEN)#### 2/5  synthetic, multithreaded (pure allocator) ####$(RESET)"
+	@$(MAKE) -s bench-mt
+	@echo ""
+	@echo "$(GREEN)#### 3/5  concurrent server pool (cross-thread malloc/free) ####$(RESET)"
+	@$(MAKE) -s bench-pool
+	@echo ""
+	@echo "$(GREEN)#### 4/5  get_next_line, single-thread (real program) ####$(RESET)"
+	@$(MAKE) -s bench-gnl
+	@echo ""
+	@echo "$(GREEN)#### 5/5  get_next_line, multithreaded (real program) ####$(RESET)"
+	@$(MAKE) -s bench-gnl-mt
+	@echo ""
+	@echo "$(GREEN)bench-all done. Allocation-bound: ft wins (synthetic + pool).$(RESET)"
+	@echo "$(GREEN)memcpy-bound (gnl): near parity. See tests/bench/BENCH.md.$(RESET)"
+
 # ---- Real multithreaded program on ft_malloc: dining philosophers -----------
 PRELOAD   = $(BINDIR)/libft_preload.so
 PHILO_DIR = tests/philosopher/philo
@@ -389,6 +409,6 @@ re: fclean all
 
 .PHONY: all clean fclean re debug leakcheck leakcheck-asan \
 	leakcheck-valgrind leakcheck-all bench bench-shipped bench-mt \
-	mt-stress helgrind bench-gnl bench-gnl-mt bench-pool philo-build \
-	philo-ft philo-libc philo-helgrind
+	mt-stress helgrind bench-gnl bench-gnl-mt bench-pool bench-all \
+	philo-build philo-ft philo-libc philo-helgrind
 

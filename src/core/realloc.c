@@ -26,10 +26,14 @@
 t_addr	ft_realloc(t_addr mem, size_t nbytes)
 {
 	t_val_ctx	v;
+	t_addr		r;
 
+	malloc_lock();
 	ensure_init();
 	v.mem = 0;
 	v.file = NULL;
 	v.line = 0;
-	return (internal_realloc(mem, nbytes, &v, 0));
+	r = internal_realloc(mem, nbytes, &v, 0);
+	malloc_unlock();
+	return (r);
 }

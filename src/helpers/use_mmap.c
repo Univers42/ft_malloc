@@ -25,6 +25,7 @@ void	handle_munmap(t_mhead *p, int nunits, t_glob *g)
 
 	o = errno;
 	munmap(p, binsize(nunits));
+	arena_remove(p);
 	compute_stats_core(g, nunits, STAT_LESS_CORE, 0);
 	errno = o;
 }

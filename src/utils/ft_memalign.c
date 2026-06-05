@@ -18,17 +18,23 @@ void	ensure_init(void)
 	t_glob	*g;
 
 	g = get_glob(GLOB_NONE, NULL);
-	if (g->pagesz == 0)
-		init_allocator_glob();
+	if (g->pagesz != 0)
+		return ;
+	init_allocator_glob();
+	pagealign();
 }
 
 t_addr	ft_memalign(size_t align, size_t size)
 {
 	t_val_ctx	v;
+	t_addr		r;
 
+	malloc_lock();
 	ensure_init();
 	v.mem = (t_addr) NULL;
 	v.file = NULL;
 	v.line = 0;
-	return (internal_memalign(align, size, &v, 0));
+	r = internal_memalign(align, size, &v, 0);
+	malloc_unlock();
+	return (r);
 }

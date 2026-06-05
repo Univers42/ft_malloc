@@ -15,6 +15,10 @@
 
 void	ft_free(t_addr mem)
 {
+	if (tls_free(mem))
+		return ;
+	malloc_lock();
 	ensure_init();
 	internal_free(mem, (char *) NULL, 0, 0);
+	malloc_unlock();
 }

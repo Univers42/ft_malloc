@@ -22,11 +22,13 @@ void	show_alloc_mem(void)
 	size_t	large;
 	size_t	total;
 
+	malloc_lock();
 	tiny = show_category("TINY", 0, TINY_MAX);
 	small = show_category("SMALL", TINY_MAX, SMALL_MAX);
 	large = show_category("LARGE", SMALL_MAX, (size_t)-1);
 	total = tiny + small + large;
 	printf("Total : %zu bytes\n", total);
+	malloc_unlock();
 }
 
 void	leak_report_on_exit(void)

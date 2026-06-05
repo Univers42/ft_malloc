@@ -15,6 +15,14 @@
 
 t_addr	ft_malloc(size_t size)
 {
+	t_addr	r;
+
+	r = tls_malloc(size);
+	if (r)
+		return (r);
+	malloc_lock();
 	ensure_init();
-	return (internal_malloc(size, (char *) NULL, 0, 0));
+	r = internal_malloc(size, (char *) NULL, 0, 0);
+	malloc_unlock();
+	return (r);
 }

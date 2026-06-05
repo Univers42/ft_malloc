@@ -37,22 +37,24 @@ static void	print_leak_entry(t_alloc_entry *e)
 
 size_t	malloc_live_count(void)
 {
-	return ((size_t)(*alloc_count_ptr()));
+	t_awalk	w;
+
+	w.min = 0;
+	w.max = (size_t)-1;
+	w.print = 0;
+	arena_report(&w);
+	return (w.count);
 }
 
 size_t	malloc_live_bytes(void)
 {
-	t_alloc_entry	*e;
-	int				i;
-	size_t			bytes;
+	t_awalk	w;
 
-	e = alloc_table();
-	bytes = 0;
-	i = -1;
-	while (++i < MAX_TRACKED_ALLOCS)
-		if (e[i].active)
-			bytes += e[i].size;
-	return (bytes);
+	w.min = 0;
+	w.max = (size_t)-1;
+	w.print = 0;
+	arena_report(&w);
+	return (w.bytes);
 }
 
 size_t	malloc_track_overflow(void)

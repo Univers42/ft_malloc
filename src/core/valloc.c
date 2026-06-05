@@ -18,12 +18,16 @@
 t_addr	ft_valloc(size_t size)
 {
 	t_val_ctx	v;
+	t_addr		r;
 
+	malloc_lock();
 	ensure_init();
 	v.mem = NULL;
 	v.file = NULL;
 	v.line = 0;
-	return (internal_valloc(size, &v, 0));
+	r = internal_valloc(size, &v, 0);
+	malloc_unlock();
+	return (r);
 }
 
 #endif

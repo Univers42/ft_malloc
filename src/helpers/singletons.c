@@ -24,7 +24,7 @@
  */
 t_addr	state_mem_singleton(t_addr mem, int set)
 {
-	static t_addr	last_mem = NULL;
+	static __thread t_addr	last_mem = NULL;
 
 	if (set)
 		last_mem = mem;

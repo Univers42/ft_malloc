@@ -133,6 +133,7 @@ void	morecore_impl(int nu)
 			break ;
 		morecore_stat_nsbrk(sbrk_amt, g);
 		build_free_list_from_mp(g, nu, mp, nblks);
+		arena_record(mp, (size_t)nblks * siz);
 		break ;
 	}
 }

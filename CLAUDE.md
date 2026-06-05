@@ -48,14 +48,26 @@ capture) and leaves the subject `make` untouched. Programmatic oracles `malloc_l
 are blind to ft_malloc's *logical* leaks (mmap/sbrk-backed), so the interposer + tracker are
 the authoritative leak oracles; ASan/Valgrind still catch genuine UB in the allocator's code.
 
-**Benchmark** (`tests/bench/`, see `BENCH.md`): `make bench` runs ~50 scenarios comparing every
-`ft_*alloc` against libc `*alloc` in one process (ft doesn't interpose libc). `make bench`
-measures the pure allocator (swaps `track.c` for a no-op stub via `filter-out`); `make
-bench-shipped` keeps the real tracker. **ft now beats glibc in 49/50, geomean ft/libc ≈ 1.85×**
-(bench-shipped ≈ 1.23×). It got there via: `-O3 -flto`, a large-block free cache
-(`LARGE_CACHE_CAP`, no more munmap-per-free), an O(1) clz size class, an O(1) hash tracker
-(backward-shift delete, in `src/debug/track_tbl.c`), dropping the dead `busy[]` guard, and
-gating all per-op safety behind `FT_HARDEN`.
+**Thread-safety + concurrency (the shipped allocator is thread-safe).** Fast path is a
+**per-thread magazine cache** (`src/helpers/tcache.c`, `__thread`, lock-free) for small classes
+(≤ `TLS_MAX_BUCKET`); the **central heap is under one mutex** (`src/helpers/lock.c`), taken at
+the public entry points only to refill/flush a magazine, do a large/realloc op, or grow an
+arena. Arena growth is **mmap-only** (concurrent `sbrk` races with libc's `brk`). `ensure_init`
+(in `ft_memalign.c`) does the full init (binsizes + `pagealign`) since the TLS path bypasses
+`internal_malloc`. `show_alloc_mem`/`malloc_live_*` walk an **arena registry**
+(`src/helpers/arena.c` + `src/debug/arena_walk.c`: every block self-describes via `mi_index`;
+`arena_remove` on munmap) so the hot path has zero shared writes — the per-op call-site tracker
+is debug-only. Verify races with **Helgrind** (`valgrind --tool=helgrind`), NOT TSan (TSan
+rejects the raw `mmap` regions). `state_mem` is `__thread`. Build is `-pthread`.
+
+**Benchmark** (`tests/bench/`, see `BENCH.md`): `make bench` (single-thread, 50 scenarios),
+`make bench-mt` (1→16 threads), `make bench-shipped`. **ft beats glibc single-threaded
+(geomean ~1.16×) and multithreaded (~1.35–1.44×, winning every thread count, scaling ~9× to 16
+threads).** The pure single-thread peak (no locks, ~1.85×, 49/50) is the git tag
+`v1.0-st-fast`; thread-safety costs the central lock on medium/large sizes. The single-thread
+speed came from: `-O3 -flto`, a large-block free cache (`LARGE_CACHE_CAP`, no munmap-per-free),
+an O(1) clz size class, dropping the dead `busy[]` guard, and gating per-op safety behind
+`FT_HARDEN`.
 
 **Build profiles — `FT_HARDEN` (`include/alloc.h`).** `FT_HARDEN` is a 0/1 compile-time
 constant (1 only under `FT_MALLOC_DEBUG`); the hot path gates safety with `if (FT_HARDEN)` so

@@ -17,14 +17,21 @@
 
 t_addr	ft_calloc(size_t n, size_t s)
 {
+	t_addr	r;
+
+	malloc_lock();
 	ensure_init();
-	return (internal_calloc(n, s, (char *) NULL, 0));
+	r = internal_calloc(n, s, (char *) NULL, 0);
+	malloc_unlock();
+	return (r);
 }
 
 void	ft_cfree(t_addr mem)
 {
+	malloc_lock();
 	ensure_init();
 	internal_cfree(mem, (char *) NULL, 0, 0);
+	malloc_unlock();
 }
 
 #endif

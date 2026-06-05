@@ -5,21 +5,60 @@ interpose libc, so one process calls both; each scenario runs the identical work
 each allocator (warm-up + best-of-7 wall clock) and reports ns/op and the winner.
 
 ```bash
-make bench           # pure allocator vs libc (debug tracker swapped for a no-op stub)
-make bench-shipped   # the lib AS SHIPPED (allocation tracker on) vs libc
+make bench           # single-thread, 50 scenarios, ft vs libc
+make bench-shipped   # same, with the show_alloc_mem tracker present
+make bench-mt        # multithreaded throughput (1..16 threads) ft vs libc
 ```
 
 ## Headline
 
-**ft_malloc is faster than glibc in 49 of 50 scenarios — geomean ft/libc ≈ 1.85×.**
+The shipped allocator is now **thread-safe** and faster than glibc **both single- and
+multi-threaded**:
 
-| build | geomean ft/libc | ft wins |
-|---|---|---|
-| pure allocator (`make bench`) | **~1.85×** | **49 / 50** |
-| as shipped, tracker on (`make bench-shipped`) | **~1.23×** | ~27 / 50 |
+| benchmark | result |
+|---|---|
+| single-thread (`make bench`, 50 scenarios) | geomean ft/libc **~1.16×**, ft wins ~32/50 |
+| multithreaded (`make bench-mt`, 1→16 threads) | geomean **~1.35–1.44×**, ft wins **every** thread count, scales ~9× to 16 threads |
 
-Before this work it was the opposite — libc won all 50, geomean ≈ 0.11× (ft ~9× slower).
-The single remaining loss is `realloc 8->128KB` (1.08×, the large-grow copy — see Deferred).
+Thread-safety is verified by **Helgrind (0 data races)** and an 8-thread cross-thread stress
+test; see the design note below. Before any of this work, libc won all 50 single-thread
+scenarios (geomean ≈ 0.11×, ft ~9× slower).
+
+> **The pure single-thread peak (no locks, geomean ~1.85×, 49/50) is preserved as the git
+> tag `v1.0-st-fast`.** Adding thread-safety costs the central lock on medium/large sizes
+> (glibc pays an arena lock there too), which is why the thread-safe single-thread geomean is
+> ~1.16× rather than 1.85×; the small/scalable sizes stay lock-free via the per-thread cache.
+
+## Multithreaded throughput (`make bench-mt`, Mops/s, 20-core box)
+
+```
+threads            ft         libc   ft/libc
+1               211.7        149.5   1.42x
+2               338.4        319.7   1.06x
+4               634.6        486.0   1.31x
+8              1313.6        765.0   1.72x
+16             2078.9       1570.2   1.32x
+geomean ft/libc across thread counts: ~1.35x
+```
+
+Each thread runs an independent small-size churn (the scalable common case): ft's per-thread
+magazine is lock-free, so it scales like glibc's tcache while staying ahead.
+
+## Thread-safety design
+
+- **Per-thread magazine cache (lock-free fast path).** malloc pops / free pushes a
+  thread-local freelist per small size class (`src/helpers/tcache.c`, `__thread`). No lock.
+- **Central heap under one mutex** (`src/helpers/lock.c`). Taken only to refill/flush a
+  magazine or grow an arena (mmap). Large classes and the hardened build use it directly.
+- **mmap-only** arena growth (concurrent `sbrk` races with libc's `brk`); the size class is in
+  the block header, so cross-thread frees are correct.
+- **`show_alloc_mem` walks an arena registry** (`src/helpers/arena.c`, `arena_walk.c`) instead
+  of a per-op tracker, so the hot path has zero shared writes. The per-op call-site tracker is
+  debug-build-only.
+
+Note: TSan can't be used here — it rejects the allocator's raw `mmap` regions ("unexpected
+memory mapping"), a known limitation for allocators that manage their own memory. Helgrind
+(which virtualizes memory) is the substitute and reports 0 races.
 
 ## Results (pure allocator, ns/op, best of 7)
 

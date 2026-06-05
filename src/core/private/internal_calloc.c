@@ -41,7 +41,10 @@ int	posix_memalign(void **memptr, size_t alignment, size_t size)
 	v.mem = NULL;
 	v.file = NULL;
 	v.line = 0;
+	malloc_lock();
+	ensure_init();
 	mem = (void *)internal_memalign(alignment, size, &v, 0);
+	malloc_unlock();
 	if (mem != 0)
 	{
 		*memptr = mem;

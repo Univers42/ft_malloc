@@ -25,4 +25,5 @@ void	init_allocator_glob(void)
 	spec.bins = initial_bins;
 	spec.len = (size_t)NBUCKETS;
 	get_glob(GLOB_BINSIZE, &spec);
+	get_glob(GLOB_NONE, NULL)->malloc_mmap_threshold = -1;
 }

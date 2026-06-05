@@ -19,13 +19,19 @@ int				tbl_find(t_alloc_entry *e, void *ptr);
 int				tbl_insert_slot(t_alloc_entry *e, void *ptr);
 void			tbl_delete_at(t_alloc_entry *e, size_t i);
 
+/*
+ * Per-op call-site tracker: gives malloc_leak_map() a file:line per live block.
+ * It runs ONLY in the FT_HARDEN (debug) build. The default build keeps the hot
+ * path free of shared writes and answers show_alloc_mem / malloc_live_* by
+ * walking the arena registry instead (see arena.c / arena_walk.c).
+ */
 void	track_allocation_dbg(void *ptr, size_t size, const char *file, int line)
 {
 	static unsigned long	serial;
 	t_alloc_entry			*e;
 	int						i;
 
-	if (!ptr)
+	if (!FT_HARDEN || !ptr)
 		return ;
 	e = alloc_table();
 	i = tbl_insert_slot(e, ptr);
@@ -53,7 +59,7 @@ void	untrack_allocation(void *ptr)
 	t_alloc_entry	*e;
 	int				i;
 
-	if (!ptr)
+	if (!FT_HARDEN || !ptr)
 		return ;
 	e = alloc_table();
 	i = tbl_find(e, ptr);

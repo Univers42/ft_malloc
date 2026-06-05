@@ -6,48 +6,32 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/02 14:50:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/25 14:59:48 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/06/05 00:00:00 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "debug.h"
+#include "alloc.h"
 #include <stdio.h>
-#include <string.h>
 
-t_alloc_entry	*alloc_table(void);
-void			print_entry(void *ptr, size_t size);
-
-static void	show_matching(t_alloc_entry *e, size_t mn, size_t mx)
-{
-	int	i;
-
-	i = -1;
-	while (++i < MAX_TRACKED_ALLOCS)
-	{
-		if (e[i].active && e[i].size > mn && e[i].size <= mx)
-			print_entry(e[i].ptr, e[i].size);
-	}
-}
-
+/*
+ * One TINY/SMALL/LARGE category for show_alloc_mem, backed by the arena walk
+ * (no per-op tracker). First pass totals the live bytes in the size range;
+ * if non-zero, print the header then a second pass listing each block.
+ * Caller (show_alloc_mem) holds the central lock.
+ */
 size_t	show_category(const char *cat, size_t min, size_t max)
 {
-	size_t			total;
-	int				i;
-	t_alloc_entry	*tbl;
+	t_awalk	w;
 
-	tbl = alloc_table();
-	total = 0;
-	i = -1;
-	while (++i < MAX_TRACKED_ALLOCS)
-	{
-		if (tbl[i].active && tbl[i].size > min
-			&& tbl[i].size <= max)
-			total += tbl[i].size;
-	}
-	if (total > 0)
+	w.min = min;
+	w.max = max;
+	w.print = 0;
+	arena_report(&w);
+	if (w.bytes > 0)
 	{
 		printf("%s :\n", cat);
-		show_matching(tbl, min, max);
+		w.print = 1;
+		arena_report(&w);
 	}
-	return (total);
+	return (w.bytes);
 }

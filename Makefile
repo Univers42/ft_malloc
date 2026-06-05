@@ -16,9 +16,9 @@ TESTSRC = tests/get_next_line.c
 TESTBIN = $(BINDIR)/gnl
 
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -fPIC -O3 -flto
+CFLAGS = -Wall -Wextra -Werror -fPIC -O3 -flto -pthread
 INCLUDES = -I./include
-LDFLAGS = -shared -flto -O3
+LDFLAGS = -shared -flto -O3 -pthread
 
 # Directories
 SRC_DIR = src
@@ -50,6 +50,9 @@ CORE_SRCS = $(CORE_DIR)/malloc.c \
             $(PRIVATE_DIR)/internals.c
 
 HELPERS_SRCS = $(HELPERS_DIR)/accessors.c \
+                $(HELPERS_DIR)/lock.c \
+                $(HELPERS_DIR)/arena.c \
+                $(HELPERS_DIR)/tcache.c \
                 $(HELPERS_DIR)/bcoalesce.c \
                 $(HELPERS_DIR)/bcoalesce_helpers.c \
                 $(HELPERS_DIR)/bsplit.c \
@@ -90,6 +93,7 @@ DEBUG_SRCS = $(DEBUG_DIR)/stats.c \
                 $(DEBUG_DIR)/show_alloc2.c \
                 $(DEBUG_DIR)/track.c \
                 $(DEBUG_DIR)/track_tbl.c \
+                $(DEBUG_DIR)/arena_walk.c \
                 $(DEBUG_DIR)/leakcheck.c \
                 $(DEBUG_DIR)/leakcheck_dtor.c \
                 $(DEBUG_DIR)/stat_utils.c \
@@ -134,22 +138,24 @@ COMP_TEST_BIN = $(BINDIR)/alloc_test
 DBG_NAME    = libft_malloc_dbg.so
 DBG_OBJ_DIR = obj_dbg
 DBG_OBJS    = $(SRCS:$(SRC_DIR)/%.c=$(DBG_OBJ_DIR)/%.o)
-DBG_CFLAGS  = -Wall -Wextra -Werror -fPIC -g -DFT_MALLOC_DEBUG
+DBG_CFLAGS  = -Wall -Wextra -Werror -fPIC -g -DFT_MALLOC_DEBUG -pthread
 LEAK_DIR    = tests/leakcheck
 LEAK_SRC    = $(LEAK_DIR)/full_audit.c
 LEAK_BIN    = $(BINDIR)/full_audit
 ASAN_BIN    = $(BINDIR)/full_audit_asan
 SYSCOUNT    = $(BINDIR)/libsyscount.so
-LEAK_CFLAGS = -Wall -Wextra -g -DFT_MALLOC_DEBUG
+LEAK_CFLAGS = -Wall -Wextra -g -DFT_MALLOC_DEBUG -pthread
 
 # ---- Benchmark (ft_* vs libc) ----------------------------------------------
 BENCH_DIR     = tests/bench
 BENCH_SRC     = $(BENCH_DIR)/bench.c
 BENCH_BIN     = $(BINDIR)/bench
 BENCH_FULL    = $(BINDIR)/bench_shipped
+BENCH_MT_SRC  = $(BENCH_DIR)/bench_mt.c
+BENCH_MT_BIN  = $(BINDIR)/bench_mt
 # pure-allocator build: swap the O(n) debug tracker for a no-op stub
 BENCH_CORESRC = $(filter-out $(DEBUG_DIR)/track.c,$(SRCS)) $(BENCH_DIR)/notrack_stub.c
-BENCH_CFLAGS  = -O3 -flto -Wall -Wextra
+BENCH_CFLAGS  = -O3 -flto -Wall -Wextra -pthread
 
 all: $(BINDIR)/$(NAME) $(TESTBIN) $(MODE_FT_BIN) $(MODE_LIBC_BIN) $(COMP_TEST_BIN)
 
@@ -239,11 +245,35 @@ $(BENCH_FULL): $(BENCH_SRC) $(SRCS) $(BENCH_DIR)/bench_scn.h
 	@$(CC) $(BENCH_CFLAGS) $(INCLUDES) -o $@ $(BENCH_SRC) $(SRCS) -lm
 	@echo "$(GREEN)✓ $@ (shipped lib incl. tracker vs libc) created$(RESET)"
 
+$(BENCH_MT_BIN): $(BENCH_MT_SRC) $(BENCH_CORESRC) $(BENCH_DIR)/bench_scn.h
+	@mkdir -p $(BINDIR)
+	@$(CC) $(BENCH_CFLAGS) $(INCLUDES) -o $@ $(BENCH_MT_SRC) $(BENCH_CORESRC) -lm
+	@echo "$(GREEN)✓ $@ (multithreaded ft vs libc) created$(RESET)"
+
 bench: $(BENCH_BIN)
 	@$(BENCH_BIN)
 
 bench-shipped: $(BENCH_FULL)
 	@$(BENCH_FULL)
+
+bench-mt: $(BENCH_MT_BIN)
+	@$(BENCH_MT_BIN)
+
+# ---- Multithreaded race / stress verification ------------------------------
+MT_BIN = $(BINDIR)/mt_stress
+
+$(MT_BIN): tests/mt/mt_stress.c $(BINDIR)/$(NAME)
+	@mkdir -p $(BINDIR)
+	@$(CC) -O2 -pthread $(INCLUDES) -o $@ tests/mt/mt_stress.c \
+		-L$(BINDIR) -lft_malloc -Wl,-rpath,'$$ORIGIN'
+	@echo "$(GREEN)✓ $@ created$(RESET)"
+
+mt-stress: $(MT_BIN)
+	@LD_LIBRARY_PATH=$(BINDIR) $(MT_BIN) 8 200000
+
+helgrind: $(MT_BIN)
+	@LD_LIBRARY_PATH=$(BINDIR) valgrind --tool=helgrind --error-exitcode=99 -q \
+		$(MT_BIN) 3 3000 && echo "$(GREEN)✓ Helgrind: 0 data races$(RESET)"
 
 clean:
 	@echo "$(RED)Cleaning object files...$(RESET)"
@@ -253,10 +283,11 @@ fclean: clean
 	@echo "$(RED)Removing $(BINDIR)/$(NAME) and $(TESTBIN)...$(RESET)"
 	@rm -f $(BINDIR)/$(NAME) $(TESTBIN)
 	@rm -f $(BINDIR)/$(DBG_NAME) $(LEAK_BIN) $(ASAN_BIN) $(SYSCOUNT)
-	@rm -f $(BENCH_BIN) $(BENCH_FULL)
+	@rm -f $(BENCH_BIN) $(BENCH_FULL) $(BENCH_MT_BIN) $(MT_BIN)
 
 re: fclean all
 
 .PHONY: all clean fclean re debug leakcheck leakcheck-asan \
-	leakcheck-valgrind leakcheck-all bench bench-shipped
+	leakcheck-valgrind leakcheck-all bench bench-shipped bench-mt \
+	mt-stress helgrind
 

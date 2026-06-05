@@ -96,6 +96,32 @@ typedef struct s_binspec
 	size_t			len;
 }	t_binspec;
 
+/* One contiguous run created by morecore: a tiled sequence of header-bearing
+ * blocks. Walking [start, start+extent) by binsize(mi_index) enumerates every
+ * block, so show_alloc_mem can report live (ISALLOC) blocks without a per-op
+ * tracker. extent is split/coalesce-invariant. */
+typedef struct s_arena
+{
+	char	*start;
+	size_t	extent;
+}	t_arena;
+
+typedef struct s_awalk
+{
+	size_t	min;
+	size_t	max;
+	int		print;
+	size_t	bytes;
+	size_t	count;
+}	t_awalk;
+
+/* Per-thread magazine cache: one freelist head + count per size class. */
+typedef struct s_tls
+{
+	t_mhead	*head[NBUCKETS];
+	int		n[NBUCKETS];
+}	t_tls;
+
 typedef enum e_glob_field
 {
 	GLOB_NONE = -1,

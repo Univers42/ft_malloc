@@ -92,6 +92,19 @@
 #  define LARGE_CACHE_CAP 67108864UL
 # endif
 
+/* Max recorded arenas (contiguous morecore runs) for show_alloc_mem's walk. */
+# ifndef MAX_ARENAS
+#  define MAX_ARENAS 65536
+# endif
+
+/* Per-thread magazine cache (lock-free fast path). Buckets 0..TLS_MAX_BUCKET
+ * (<= 4096-byte class) are cached per thread; larger sizes go to the locked
+ * central heap. Refill/flush move TLS_BATCH blocks at a time; a free flushes
+ * when a class exceeds TLS_HIGH. */
+# define TLS_MAX_BUCKET 8
+# define TLS_BATCH 16
+# define TLS_HIGH 32
+
 # ifdef USE_HYBRID_MODE
 #  define USE_SBRK_FOR_TINY_SMALL 1
 # else

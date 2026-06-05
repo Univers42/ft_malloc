@@ -61,6 +61,18 @@ void		morecore(int nu);
 void		malloc_block_signals(sigset_t *setp, sigset_t *osetp);
 void		malloc_unblock_signals(sigset_t *setp, sigset_t *osetp);
 
+void		malloc_lock(void);
+void		malloc_unlock(void);
+
+t_addr		tls_malloc(size_t size);
+int			tls_free(t_addr mem);
+
+void		arena_record(void *start, size_t extent);
+void		arena_remove(void *start);
+t_arena		*arena_table(void);
+int			arena_count(void);
+void		arena_report(t_awalk *w);
+
 void		show_alloc_mem(void);
 void		track_allocation(void *ptr, size_t size);
 void		track_allocation_dbg(void *ptr, size_t size,

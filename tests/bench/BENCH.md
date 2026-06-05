@@ -122,9 +122,40 @@ pays off for multi-MB blocks. So the copy path is the right choice here and is a
 reverted. (calloc zero-skip on fresh mmap is similarly low-value: the bench's calloc sizes are
 served from recycled blocks that must be zeroed.)
 
+## Real-program benchmarks (`make bench-gnl`, `make bench-gnl-mt`, `make philo-ft`)
+
+The synthetic suite above is a *pure-allocator* microbenchmark. These run the allocator
+through actual programs:
+
+- **get_next_line** (`tests/get_next_line.c`, real source) — malloc/realloc-heavy: every line
+  is built in a buffer grown by repeated realloc. `bench-gnl` runs the real get_next_line over
+  a 16 MB file (no printf in the hot loop). `bench-gnl-mt` runs the same line-reading pattern
+  in 1..16 threads (a static-free reader, since get_next_line's per-fd statics aren't safe once
+  threads recycle fds).
+- **dining philosophers** (`tests/philosopher`, submodule) — a real pthreads program;
+  `make philo-ft` runs it entirely on ft_malloc via the `LD_PRELOAD` shim `tests/interpose.c`
+  (ft_malloc is not an interposer, so the shim maps libc `malloc`/`free`/`realloc`/`calloc`
+  to `ft_*`). `make philo-helgrind` runs it under Helgrind.
+
+**Results.** get_next_line single-thread: ft ≈ **0.88×** glibc (10.6 vs 12.1 Mlines/s);
+multithreaded: **near parity** (within ~5–9% across 1–16 threads, ft ahead at some counts,
+run-to-run noisy). philosophers: **runs correctly and Helgrind-clean** on ft_malloc.
+
+**Why gnl lands near parity, not the synthetic 1.17×/1.34× win:** gnl spends roughly half its
+time in the per-line `memcpy` (allocator-independent), so any allocator edge is diluted; and
+its growing-buffer realloc favors glibc's boundary-tag design, which extends a chunk *in place*,
+whereas ft's segregated buckets must copy when a grow crosses a size class. The dedicated
+**lock-free TLS realloc fast path** (`src/helpers/tcache2.c`: `realloc(NULL)` → magazine pop,
+same/smaller class → in place, grow-within-TLS → magazine copy) was added for exactly this
+workload — it lifted gnl from a clear loss (~0.64×, when every realloc took the central lock)
+to the near-parity above. Takeaway: ft wins allocation-bound workloads; on memcpy-bound real
+code it matches glibc and stays correct + race-free.
+
 ## Caveats
 
 - Single-threaded, one machine, `CLOCK_MONOTONIC` best-of-7; treat ratios as order-of-magnitude
   (tiny-churn ratios jitter run-to-run).
 - The libc memalign path uses glibc `memalign()` on purpose: ft defines a `posix_memalign`
   symbol that would otherwise shadow libc's in this single binary.
+- get_next_line is ~half memcpy, so `bench-gnl` ratios understate the allocator's own speed;
+  read it together with the synthetic `make bench`.

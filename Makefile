@@ -53,6 +53,7 @@ HELPERS_SRCS = $(HELPERS_DIR)/accessors.c \
                 $(HELPERS_DIR)/lock.c \
                 $(HELPERS_DIR)/arena.c \
                 $(HELPERS_DIR)/tcache.c \
+                $(HELPERS_DIR)/tcache2.c \
                 $(HELPERS_DIR)/bcoalesce.c \
                 $(HELPERS_DIR)/bcoalesce_helpers.c \
                 $(HELPERS_DIR)/bsplit.c \
@@ -275,6 +276,81 @@ helgrind: $(MT_BIN)
 	@LD_LIBRARY_PATH=$(BINDIR) valgrind --tool=helgrind --error-exitcode=99 -q \
 		$(MT_BIN) 3 3000 && echo "$(GREEN)✓ Helgrind: 0 data races$(RESET)"
 
+# ---- Real-program benchmark: get_next_line (malloc+realloc heavy) -----------
+GNL_SRC      = tests/get_next_line.c
+GNL_BENCH    = tests/bench/bench_gnl.c
+GNL_MT       = tests/bench/bench_gnl_mt.c
+GNL_FT       = $(BINDIR)/bench_gnl_ft
+GNL_LIBC     = $(BINDIR)/bench_gnl_libc
+GNL_MT_FT    = $(BINDIR)/bench_gnl_mt_ft
+GNL_MT_LIBC  = $(BINDIR)/bench_gnl_mt_libc
+GNL_CFLAGS   = -O2 $(INCLUDES) -Itests
+RPATH        = -Wl,-rpath,'$$ORIGIN'
+
+# get_next_line.c carries its own main(); rename it out so the bench main wins.
+$(GNL_FT): $(GNL_BENCH) $(GNL_SRC) $(BINDIR)/$(NAME)
+	@mkdir -p $(BINDIR)
+	@$(CC) $(GNL_CFLAGS) -Dmain=gnl_file_main -c $(GNL_SRC) -o $(BINDIR)/gnl_ft.o
+	@$(CC) $(GNL_CFLAGS) -o $@ $(GNL_BENCH) $(BINDIR)/gnl_ft.o \
+		-L$(BINDIR) -lft_malloc $(RPATH)
+
+$(GNL_LIBC): $(GNL_BENCH) $(GNL_SRC)
+	@mkdir -p $(BINDIR)
+	@$(CC) $(GNL_CFLAGS) -DMODE_MALLOC=1 -Dmain=gnl_file_main -c $(GNL_SRC) \
+		-o $(BINDIR)/gnl_libc.o
+	@$(CC) $(GNL_CFLAGS) -DMODE_MALLOC=1 -o $@ $(GNL_BENCH) $(BINDIR)/gnl_libc.o
+
+bench-gnl: $(GNL_FT) $(GNL_LIBC)
+	@echo "$(GREEN)== get_next_line throughput (single thread) ==$(RESET)"
+	@LD_LIBRARY_PATH=$(BINDIR) $(GNL_FT)
+	@$(GNL_LIBC)
+
+$(GNL_MT_FT): $(GNL_MT) $(BINDIR)/$(NAME)
+	@mkdir -p $(BINDIR)
+	@$(CC) $(GNL_CFLAGS) -pthread -o $@ $(GNL_MT) \
+		-L$(BINDIR) -lft_malloc $(RPATH)
+
+$(GNL_MT_LIBC): $(GNL_MT)
+	@mkdir -p $(BINDIR)
+	@$(CC) $(GNL_CFLAGS) -pthread -DMODE_MALLOC=1 -o $@ $(GNL_MT)
+
+bench-gnl-mt: $(GNL_MT_FT) $(GNL_MT_LIBC)
+	@echo "$(GREEN)== get_next_line throughput (multithreaded) ==$(RESET)"
+	@LD_LIBRARY_PATH=$(BINDIR) $(GNL_MT_FT)
+	@echo ""
+	@$(GNL_MT_LIBC)
+
+# ---- Real multithreaded program on ft_malloc: dining philosophers -----------
+PRELOAD   = $(BINDIR)/libft_preload.so
+PHILO_DIR = tests/philosopher/philo
+PHILO_BIN = $(PHILO_DIR)/bin/philo
+# n_philo time_to_die time_to_eat time_to_sleep [must_eat] — finite (must_eat).
+PHILO_ARGS = 5 800 200 200 10
+
+$(PRELOAD): tests/interpose.c $(BINDIR)/$(NAME)
+	@mkdir -p $(BINDIR)
+	@$(CC) -O2 -fPIC -shared $(INCLUDES) -o $@ tests/interpose.c \
+		-L$(BINDIR) -lft_malloc $(RPATH)
+	@echo "$(GREEN)✓ $@ (libc malloc -> ft_malloc shim) created$(RESET)"
+
+philo-build:
+	@$(MAKE) -s -C $(PHILO_DIR)
+
+philo-ft: $(PRELOAD) philo-build
+	@echo "$(GREEN)== dining philosophers on ft_malloc (LD_PRELOAD) ==$(RESET)"
+	@LD_PRELOAD=$(CURDIR)/$(PRELOAD) $(PHILO_BIN) $(PHILO_ARGS); \
+		echo "philo (ft_malloc) exit=$$?"
+
+philo-libc: philo-build
+	@echo "$(GREEN)== dining philosophers on libc malloc ==$(RESET)"
+	@$(PHILO_BIN) $(PHILO_ARGS); echo "philo (libc) exit=$$?"
+
+philo-helgrind: $(PRELOAD) philo-build
+	@echo "$(GREEN)== philosophers on ft_malloc under Helgrind ==$(RESET)"
+	@LD_PRELOAD=$(CURDIR)/$(PRELOAD) valgrind --tool=helgrind -q \
+		--error-exitcode=99 $(PHILO_BIN) 4 1000 200 200 3 \
+		&& echo "$(GREEN)✓ philosophers on ft_malloc: race-free$(RESET)"
+
 clean:
 	@echo "$(RED)Cleaning object files...$(RESET)"
 	@rm -rf $(OBJ_DIR) $(DBG_OBJ_DIR)
@@ -284,10 +360,14 @@ fclean: clean
 	@rm -f $(BINDIR)/$(NAME) $(TESTBIN)
 	@rm -f $(BINDIR)/$(DBG_NAME) $(LEAK_BIN) $(ASAN_BIN) $(SYSCOUNT)
 	@rm -f $(BENCH_BIN) $(BENCH_FULL) $(BENCH_MT_BIN) $(MT_BIN)
+	@rm -f $(GNL_FT) $(GNL_LIBC) $(GNL_MT_FT) $(GNL_MT_LIBC) $(PRELOAD)
+	@rm -f $(BINDIR)/gnl_ft.o $(BINDIR)/gnl_libc.o \
+		$(BINDIR)/gnl_mt_ft.o $(BINDIR)/gnl_mt_libc.o
 
 re: fclean all
 
 .PHONY: all clean fclean re debug leakcheck leakcheck-asan \
 	leakcheck-valgrind leakcheck-all bench bench-shipped bench-mt \
-	mt-stress helgrind
+	mt-stress helgrind bench-gnl bench-gnl-mt philo-build philo-ft \
+	philo-libc philo-helgrind
 

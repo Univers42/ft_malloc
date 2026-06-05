@@ -52,7 +52,11 @@ the authoritative leak oracles; ASan/Valgrind still catch genuine UB in the allo
 **per-thread magazine cache** (`src/helpers/tcache.c`, `__thread`, lock-free) for small classes
 (≤ `TLS_MAX_BUCKET`); the **central heap is under one mutex** (`src/helpers/lock.c`), taken at
 the public entry points only to refill/flush a magazine, do a large/realloc op, or grow an
-arena. Arena growth is **mmap-only** (concurrent `sbrk` races with libc's `brk`). `ensure_init`
+arena. **`realloc` has its own lock-free TLS fast path** (`src/helpers/tcache2.c`,
+`tls_realloc`, wired into `ft_realloc`): `realloc(NULL)` → magazine pop, same/smaller TLS class
+→ in place, grow within TLS classes → magazine copy; anything else sets `*handled = 0` and falls
+to the locked central `internal_realloc`. (Added so malloc+realloc-heavy real code like
+get_next_line doesn't take the lock per line.) Arena growth is **mmap-only** (concurrent `sbrk` races with libc's `brk`). `ensure_init`
 (in `ft_memalign.c`) does the full init (binsizes + `pagealign`) since the TLS path bypasses
 `internal_malloc`. `show_alloc_mem`/`malloc_live_*` walk an **arena registry**
 (`src/helpers/arena.c` + `src/debug/arena_walk.c`: every block self-describes via `mi_index`;
@@ -68,6 +72,17 @@ threads).** The pure single-thread peak (no locks, ~1.85×, 49/50) is the git ta
 speed came from: `-O3 -flto`, a large-block free cache (`LARGE_CACHE_CAP`, no munmap-per-free),
 an O(1) clz size class, dropping the dead `busy[]` guard, and gating per-op safety behind
 `FT_HARDEN`.
+
+**Real-program benchmarks** (`make bench-gnl`, `make bench-gnl-mt`, `make philo-ft` /
+`philo-helgrind`; see `BENCH.md`). `bench-gnl[-mt]` run the actual `get_next_line` (malloc +
+growing realloc per line) ft vs libc; `philo-ft` runs the `tests/philosopher` submodule entirely
+on ft_malloc via the `LD_PRELOAD` shim `tests/interpose.c` (maps libc `malloc`→`ft_malloc`,
+since ft is not an interposer). Findings: get_next_line is ~half memcpy (allocator-independent),
+so ft lands at **~0.88× single-thread / near parity multithreaded** — not the synthetic win —
+and glibc's boundary-tag realloc extends in place where ft's buckets copy across size classes.
+philosophers runs **correctly and Helgrind-clean** on ft. So: ft wins allocation-bound
+workloads (the synthetic suite), matches glibc on memcpy-bound real code, and stays
+correct + race-free. **Don't claim "faster on everything"** — it's workload-dependent.
 
 **Build profiles — `FT_HARDEN` (`include/alloc.h`).** `FT_HARDEN` is a 0/1 compile-time
 constant (1 only under `FT_MALLOC_DEBUG`); the hot path gates safety with `if (FT_HARDEN)` so

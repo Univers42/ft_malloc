@@ -66,6 +66,7 @@ void		malloc_unlock(void);
 
 t_addr		tls_malloc(size_t size);
 int			tls_free(t_addr mem);
+t_addr		tls_realloc(t_addr mem, size_t size, int *handled);
 
 void		arena_record(void *start, size_t extent);
 void		arena_remove(void *start);

@@ -1,0 +1,3 @@
+[submodule "tests/philosopher"]
+	path = tests/philosopher
+	url = git@github.com:Univers42/philosopher.git

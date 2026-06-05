@@ -27,7 +27,11 @@ t_addr	ft_realloc(t_addr mem, size_t nbytes)
 {
 	t_val_ctx	v;
 	t_addr		r;
+	int			handled;
 
+	r = tls_realloc(mem, nbytes, &handled);
+	if (handled)
+		return (r);
 	malloc_lock();
 	ensure_init();
 	v.mem = 0;
